@@ -4,7 +4,7 @@ import React from 'react';
 const WhatsAppFloat = () => {
   return (
     <a
-      href="https://wa.me/9412345678" // Change this to your number in international format without +
+      href="https://wa.me/+94713788355" // Change this to your number in international format without +
       className="fixed bottom-5 right-5 z-50"
       target="_blank"
       rel="noopener noreferrer"
