@@ -103,7 +103,10 @@ const Product = () => {
           {/* Display stock status here */}
           {renderStockStatus()}
           
-          <p className='mt-5 mb-8 text-gray-500 md:w-4/5'>{productData.description}</p>
+          <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+  {productData.description}
+</p>
+
           
           {/* Size Table - Only display if available */}
           {productData.sizeChart && (
