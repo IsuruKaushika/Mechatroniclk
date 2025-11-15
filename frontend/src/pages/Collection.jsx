@@ -108,52 +108,36 @@ const Collection = () => {
           <p className='mb-3 text-sm font-medium'>CATEGORIES</p>
           <div className='flex flex-col gap-2 text-sm font-light text-gray-700'>
             <p className = 'flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Men'} onChange={toggleCategory}/>
-              Men
+              <input className='w-3' type='checkbox' value={'Development Boards'} onChange={toggleCategory}/>
+              Development Boards
             </p>
             <p className = 'flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Women'} onChange={toggleCategory}/>
-              Women
+              <input className='w-3' type='checkbox' value={'Sensors'} onChange={toggleCategory}/>
+              Sensors
             </p>
             <p className = 'flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Kids'} onChange={toggleCategory}/>
-              Kids
+              <input className='w-3' type='checkbox' value={'Capacitors and Resistors'} onChange={toggleCategory}/>
+              Capacitors and Resistors
             </p>
             <p className = 'flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Kids'} onChange={toggleCategory}/>
-              None
+              <input className='w-3' type='checkbox' value={'Motors and Drivers'} onChange={toggleCategory}/>
+              Motors and Drivers
             </p>
-            
+            <p className = 'flex gap-2'>
+              <input className='w-3' type='checkbox' value={'Power'} onChange={toggleCategory}/>
+              Power
+            </p>
+            <p className = 'flex gap-2'>
+              <input className='w-3' type='checkbox' value={'Displays'} onChange={toggleCategory}/>
+              Displays
+            </p>
+            <p className = 'flex gap-2'>
+              <input className='w-3' type='checkbox' value={'Kits'} onChange={toggleCategory}/>
+              Kits
+            </p>
           </div>
         </div>
-          {/*sub category*/}
-          <div className={`border border-gray-300 pl-5 py-3 my-5 ${showFilter ? '' :'hidden'} lg:block  ` }>
-          <p className='mb-3 text-sm font-medium'>TYPE</p>
-          <div className='flex flex-col gap-2 text-sm font-light text-gray-700'>
-            <p className = 'flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Saree'} onChange={toggleSubCategory}/>
-              Saree
-            </p>
-            <p className = 'flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Tops'} onChange={toggleSubCategory}/>
-              Tops
-            </p>
-            <p className = 'flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Dress'} onChange={toggleSubCategory}/>
-              Dress
-            </p>
-            <p className = 'flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Lungi&Sarong'} onChange={toggleSubCategory}/>
-              Lungi & Sarong
-            </p>
-            <p className = 'flex gap-2'>
-              <input className='w-3' type='checkbox' value={'HomeAccessories'} onChange={toggleSubCategory}/>
-              Home Accessories
-            </p>
-          </div>
-          <div>
-          </div>
-        </div>
+    
       </div>
       {/*Right Sidebar*/}
       <div className='flex-1'>

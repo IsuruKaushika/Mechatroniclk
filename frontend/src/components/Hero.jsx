@@ -54,8 +54,8 @@ const Hero = () => {
   if (isLoading || bestSellerImages.length === 0) {
     return (
       <div className='flex flex-col sm:flex-row border border-gray-400 h-[500px] sm:h-[600px] lg:h-[700px]'>
-        <div className='w-full sm:w-1/2 order-1 sm:order-none bg-gray-200 animate-pulse'></div>
-        <div className='w-full sm:w-1/2 flex items-center justify-center py-10 sm:py-0'>
+        <div className='w-full sm:w-2/5 order-1 sm:order-none bg-gray-200 animate-pulse'></div>
+        <div className='w-full sm:w-3/5 flex items-center justify-center py-10 sm:py-0'>
           <div className='text-[#414141]'>Loading...</div>
         </div>
       </div>
@@ -65,12 +65,12 @@ const Hero = () => {
   return (
     <div className='flex flex-col sm:flex-row border border-gray-400 overflow-hidden min-h-[500px] sm:min-h-[600px] lg:min-h-[700px]'>
         {/*Hero Right Side - Rotating Bestseller Images*/}
-        <div className='w-full sm:w-1/2 order-1 sm:order-none relative overflow-hidden group'>
+        <div className='w-full sm:w-2/5 order-1 sm:order-none relative overflow-hidden group'>
           <div className='relative h-[500px] sm:h-[600px] lg:h-[700px]'>
             {bestSellerImages.map((imageData, index) => (
               <img 
                 key={imageData.id}
-                className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-in-out transform ${
+                className={`absolute inset-0 w-full h-full object-contain bg-gray-50 transition-all duration-1000 ease-in-out transform ${
                   index === currentImageIndex 
                     ? 'opacity-100 scale-100' 
                     : 'opacity-0 scale-105'
@@ -124,7 +124,7 @@ const Hero = () => {
         </div>
         
         {/*Hero Left Side - Animated Text*/}
-        <div className='w-full sm:w-1/2 flex items-center justify-center py-10 sm:py-0 animate-fade-in-left'>
+        <div className='w-full sm:w-3/5 flex items-center justify-center py-10 sm:py-0 animate-fade-in-left'>
           <div className='text-[#414141]'>
               <div className='flex items-center gap-2 animate-slide-in-top' style={{animationDelay: '0.2s'}}>
                   <p className='w-8 md:w-11 h-[2px] bg-[#414141] animate-expand-width'></p>

@@ -16,7 +16,7 @@ const ProductItem = ({id, image, name, price, stockStatus}) => {
             case 'Limited Stock':
                 return 'text-orange-500';
             default:
-                return 'text-gray-600'; // Default to grey if not specified
+                return 'text-gray-600';
         }
     };
 
@@ -28,20 +28,25 @@ const ProductItem = ({id, image, name, price, stockStatus}) => {
             case 'Limited Stock':
                 return 'bg-orange-500 text-white';
             case 'In Stock':
-                return 'bg-gray-600 text-white';
+                return 'bg-green-600 text-white';
             default:
-                return 'bg-gray-600 text-white'; // Default to grey if not specified
+                return 'bg-gray-600 text-white';
         }
     };
 
     return (
         <Link className='text-gray-700 cursor-pointer' to={`/product/${id}`}>
-            <div className='overflow-hidden relative'>
-                <img className='hover:scale-110 transition ease-in-out' src={image[0]} alt=" "/>
+            {/* Fixed aspect ratio container */}
+            <div className='relative w-full aspect-square overflow-hidden bg-white border border-gray-100'>
+                <img 
+                    className='absolute inset-0 w-full h-full object-contain p-4 hover:scale-105 transition ease-in-out' 
+                    src={image[0]} 
+                    alt={name}
+                />
                 
                 {/* Stock Status Label - Bottom Right Corner of Image */}
                 {stockStatus && (
-                    <div className='absolute bottom-0 right-0 m-2'>
+                    <div className='absolute bottom-0 right-0 m-2 z-10'>
                         <span className={`text-xs font-medium px-2 py-1 inline-block rounded shadow-md ${getBadgeStyle()}`}>
                             {stockStatus}
                         </span>

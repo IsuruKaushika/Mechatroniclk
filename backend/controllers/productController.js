@@ -10,7 +10,6 @@ const addProduct = async(req, res) => {
             price, 
             category, 
             subCategory, 
-            sizes, 
             bestseller,
             stockStatus // New field
         } = req.body;
@@ -19,7 +18,7 @@ const addProduct = async(req, res) => {
         const image2 = req.files.image2 && req.files.image2[0]
         const image3 = req.files.image3 && req.files.image3[0]
         const image4 = req.files.image4 && req.files.image4[0]
-        const sizeChartImage = req.files.sizeChart && req.files.sizeChart[0] // New file field
+
 
         const images = [image1, image2, image3, image4].filter((item) => item !== undefined)
 
@@ -30,12 +29,7 @@ const addProduct = async(req, res) => {
             })
         )
 
-        // Upload size chart image if provided
-        let sizeChartUrl = null;
-        if (sizeChartImage) {
-            const result = await cloudinary.uploader.upload(sizeChartImage.path, {resource_type: 'image'});
-            sizeChartUrl = result.secure_url;
-        }
+    
 
         const productData = {
             name,
@@ -43,12 +37,10 @@ const addProduct = async(req, res) => {
             price: Number(price),
             category,
             subCategory,
-            sizes: JSON.parse(sizes),
             bestseller: bestseller === "true" ? true : false,
             image: imagesUrl,
             date: Date.now(),
-            stockStatus: stockStatus || 'In Stock', // Set default if not provided
-            sizeChart: sizeChartUrl // Add size chart URL
+            stockStatus: stockStatus || 'In Stock', 
         }
         console.log(productData)
 
