@@ -36,7 +36,7 @@ const DeliveredOrders = ({ token }) => {
 
   // Send a single order to Google Sheets
   const sendToSheet = async (order) => {
-    const scriptURL = 'https://script.google.com/macros/s/AKfycby1eQNVFNHpqE7LeVcx1jKkeeBlZDSTx0A08yCvxcBjYeSpTK3EdlqINnd2S8YFgJVG/exec'
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyr4eMDMQX5u-MINhEw4KrOb5qcXFhOMvf06aeDLlbEFVTQA7gSPPm1DPhhuXDFs_BX/exec'
 
     const formData = new URLSearchParams()
     formData.append('orderId', order._id)
