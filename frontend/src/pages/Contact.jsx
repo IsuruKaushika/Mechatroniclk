@@ -32,7 +32,7 @@ const Contact = () => {
       'service_bmwxgww', // Replace with your EmailJS service ID
       'template_tbyz2d8', // Replace with your EmailJS template ID
       form.current,
-      'INIKYQWseQGwbV8y8' // Replace with your EmailJS public key
+      'INIKYQWseQGwbV8y8' 
     )
     .then((result) => {
       console.log('Email sent successfully:', result.text);
