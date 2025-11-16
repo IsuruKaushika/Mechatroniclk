@@ -27,6 +27,7 @@ const NewsLetterBox = () => {
       setEmail('')
       setError('')
     })
+    
     .catch((error) => {
       console.error('FAILED...', error)
       setStatus('')
