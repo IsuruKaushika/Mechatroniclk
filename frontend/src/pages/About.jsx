@@ -9,38 +9,77 @@ const About = () => {
       <div className='text-2xl text-center pt-8 border-t'>
         <Title text1={'ABOUT'} text2={'US'} />
       </div>
+
       <div className='my-10 flex flex-col md:flex-row gap-16'>
-        <img className ='w-full md:max-w-[450px]' src={assets.about_img} alt="About Us"/>
+        <img className='w-full md:max-w-[450px]' src={assets.about_img} alt="About Us" />
+        
         <div className='flex flex-col justify-center gap-6 md:w-2/4 text-gray-600'>
+          
           <h2 className='text-xl font-semibold text-gray-800'>Who We Are</h2>
-          <p>We bring you the latest fashion trends with high-quality, stylish, and affordable clothing. Whether you're looking for everyday essentials or statement pieces, we have something for everyone.</p>
-          
+          <p>
+            We are your trusted destination for high-quality electronic components,
+            modules, development boards, sensors, tools, and accessories. Whether you
+            are a hobbyist, student, or professional engineer, we provide the products
+            you need to bring your electronic projects to life.
+          </p>
+
           <h2 className='text-xl font-semibold text-gray-800'>Our Mission</h2>
-          <p>Our mission is to make shopping easy, enjoyable, and accessible from anywhere. We strive to provide the best quality products at affordable prices, ensuring customer satisfaction with every purchase.</p>
-          
+          <p>
+            Our mission is to make electronics accessible and affordable for everyone.
+            We aim to support innovation by offering reliable components, fast
+            delivery, and a seamless online shopping experience. We help creators,
+            learners, and professionals build the future—one component at a time.
+          </p>
+
           <h2 className='text-xl font-semibold text-gray-800'>Our Vision</h2>
-          <p>We envision a world where fashion is inclusive, sustainable, and empowers individuals to express their unique style with confidence. Our goal is to become a globally recognized brand known for quality, affordability, and innovation.</p>
+          <p>
+            We envision becoming a globally trusted electronics supplier known for
+            quality, affordability, and exceptional service. Our goal is to empower
+            engineers and innovators to explore technology with confidence and build
+            smarter, more sustainable solutions.
+          </p>
         </div>
       </div>
-      <div className ='text-xl py-4'>
+
+      <div className='text-xl py-4'>
         <Title text1={'WHY'} text2={'CHOOSE US'} />
       </div>
 
-      <div className ='flex flex-col md:flex-row text-sm mb-20'>
-        <div className ='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5'>
-          <b>Quality Assurance :</b>
-          <p className='text-gray-600'>We prioritize quality in every piece of clothing we offer. From fabric selection to stitching, we ensure that our products meet the highest standards of durability and comfort. Our commitment to quality allows our customers to enjoy long-lasting fashion that looks and feels great.</p>
+      <div className='flex flex-col md:flex-row text-sm mb-20'>
+
+        <div className='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5'>
+          <b>Trusted Quality Components :</b>
+          <p className='text-gray-600'>
+            We provide only authentic and reliable components sourced from reputable
+            manufacturers. Every product is carefully inspected to ensure it meets
+            industry standards—giving you the confidence to build robust and durable
+            electronic solutions.
+          </p>
         </div>
-        <div className ='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5'>
-          <b>Convenience :</b>
-          <p className='text-gray-600'>Shopping with us is hassle-free and enjoyable. Our user-friendly website and seamless checkout process make it easy to find your perfect outfit. With fast shipping and multiple payment options, we ensure a smooth and convenient shopping experience from start to finish.</p>
+
+        <div className='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5'>
+          <b>Convenience & Fast Delivery :</b>
+          <p className='text-gray-600'>
+            Our website is designed to make component shopping simple and fast. With
+            clear product descriptions, easy navigation, and speedy shipping, you can
+            get the parts you need without delays—perfect for urgent projects and
+            deadlines.
+          </p>
         </div>
-        <div className ='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5'>
-          <b>Exceptional Customer Service :</b>
-          <p className='text-gray-600'>Customer satisfaction is our top priority. Our dedicated support team is always ready to assist you with any queries or concerns. Whether it's sizing help, order tracking, or returns, we are committed to providing a friendly and responsive service that enhances your shopping experience.</p>
+
+        <div className='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5'>
+          <b>Expert Customer Support :</b>
+          <p className='text-gray-600'>
+            Our technical support team is always ready to help—whether you need
+            assistance choosing the right microcontroller, checking compatibility, or
+            tracking your order. We are committed to providing friendly and reliable
+            support to make your experience smooth and worry-free.
+          </p>
         </div>
+
       </div>
-      <NewsLetterBox/>
+
+      <NewsLetterBox />
     </div>
   )
 }

@@ -51,7 +51,7 @@ const Returns = () => {
               Return & Refund Policy
             </h1>
             <div className="flex items-center gap-2">
-              <p className="font-semibold text-sm md:text-base">LAST UPDATED: MAY 3, 2025</p>
+              <p className="font-semibold text-sm md:text-base">LAST UPDATED: November 17, 2025</p>
               <p className="w-8 md:w-11 h-[1px] bg-[#414141]"></p>
             </div>
           </div>
@@ -59,49 +59,82 @@ const Returns = () => {
       </div>
 
       <div className="space-y-4">
+        
+        {/* 1. Returns */}
         <Section id="returns" title="1. Returns">
-          <p>We accept returns within 7 days of your purchase date. Items must be unused, in original condition, and returned in their original packaging.</p>
+          <p>We accept returns within <strong>7 days</strong> of your purchase date. Returned electronic items must be unused, in original condition, and include <strong>all accessories, cables, manuals, warranty cards, and original packaging</strong>.</p>
+          <p>Items showing signs of installation, tampering, or physical damage caused by misuse will not be eligible for return.</p>
         </Section>
 
+        {/* 2. Refunds */}
         <Section id="refunds" title="2. Refunds">
-          <p>Once we receive and inspect your returned item, we’ll notify you of your refund approval status. If approved, a refund will be processed to your original payment method.</p>
-          <p className="mt-2">Refunds exclude any shipping costs paid during the initial order.</p>
-        </Section>
-
-        <Section id="exchanges" title="3. Exchanges">
-          <p>To exchange an item (for size, color, or style), please contact our customer support within 3 days of receiving your order. We will guide you through the exchange process.</p>
-        </Section>
-
-        <Section id="nonReturnable" title="4. Non-Returnable Items">
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Gift cards</li>
-            <li>Personalized or custom-made items</li>
-            <li>Dresses that have been worn</li>
+          <p>After your returned item is received and inspected, we will notify you of your refund approval status. If approved, refunds will be issued to your <strong>original payment method</strong>.</p>
+          <p>Refunds exclude:</p>
+          <ul className="list-disc pl-5">
+            <li>Initial shipping costs</li>
+            <li>Installation or configuration fees (if applicable)</li>
           </ul>
         </Section>
 
+        {/* 3. Exchanges */}
+        <Section id="exchanges" title="3. Exchanges">
+          <p>If you received a <strong>wrong item, wrong model, wrong specification, or a defective product</strong>, please contact our support team within <strong>3 days</strong> of receiving your order.</p>
+          <p>We will guide you through testing and the exchange process.</p>
+        </Section>
+
+        {/* 4. Non-Returnable Items */}
+        <Section id="nonReturnable" title="4. Non-Returnable Items">
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Software, license keys, activation codes</li>
+            <li>Earphones, earbuds, or headphones (hygiene rules)</li>
+            <li>Opened microcontrollers, modules, ICs, and sensors</li>
+            <li>Products with missing accessories or broken seals</li>
+            <li>Items damaged due to incorrect wiring or improper use</li>
+          </ul>
+        </Section>
+
+        {/* 5. Damaged or Defective Items */}
         <Section id="damaged" title="5. Damaged or Defective Items">
-          <p>If your order arrives damaged or defective, contact us immediately. We’ll arrange a replacement or a refund based on your preference and availability.</p>
+          <p>If your product arrives damaged, defective, or dead on arrival (DOA), contact us within <strong>48 hours</strong> with photos or videos for verification.</p>
+          <p>After review, we may offer:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>A replacement unit</li>
+            <li>Store credit</li>
+            <li>A full or partial refund</li>
+          </ul>
+          <p>Damage caused by incorrect wiring, soldering, modification, or mishandling is <strong>not covered</strong>.</p>
         </Section>
 
+        {/* 6. Return Shipping */}
         <Section id="shipping" title="6. Return Shipping">
-          <p>You are responsible for return shipping costs unless the return is due to our error (e.g., wrong or defective item). If it's our fault, we’ll provide a prepaid return shipping label.</p>
+          <p>Customers must cover return shipping costs unless:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>You received the wrong item</li>
+            <li>The item was defective or DOA</li>
+            <li>The issue was due to our mistake</li>
+          </ul>
+          <p>If eligible, we will provide a prepaid return label.</p>
         </Section>
 
+        {/* 7. Processing Time */}
         <Section id="processing" title="7. Processing Time">
-          <p>Returns and exchanges are processed within 5 business days after we receive your returned item. Refund timelines may vary depending on your payment provider.</p>
+          <p>Returns, exchanges, and refunds are processed within <strong>3–7 business days</strong> after we receive the returned item.</p>
+          <p>Refund clearance times may vary depending on your bank or payment provider.</p>
         </Section>
 
+        {/* 8. Contact */}
         <Section id="contact" title="8. Contact Us">
-          <p>If you have questions or need assistance with your return, our support team is here to help:</p>
+          <p>If you need help with a return, exchange, or warranty claim, our support team is available:</p>
           <ul className="list-disc pl-5 mt-2 space-y-1">
-            <li>Email: ogeeeraa@gmail.com</li>
-            <li>Phone: +94 71 220 5395</li>
+            <li>Email: mechatroniclk@gmail.com</li>
+            <li>Phone: +94 72 615 1400</li>
             <li>Live Chat: Available on our website during business hours</li>
           </ul>
         </Section>
+
       </div>
 
+      {/* Footer */}
       <div className="mt-16 pt-8 border-t border-gray-300 flex flex-col items-center">
         <div className="text-[#414141]">
           <div className="flex items-center gap-2 justify-center">
@@ -112,6 +145,7 @@ const Returns = () => {
           <p className="text-center text-sm mt-2">All rights reserved.</p>
         </div>
       </div>
+      
     </div>
   );
 };
