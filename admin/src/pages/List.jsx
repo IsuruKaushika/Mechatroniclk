@@ -70,6 +70,31 @@ const List = ({ token }) => {
     }
   }
 
+  const updateBestSeller = async (productId, isBestSeller) => {
+    if (isUpdating) return
+    setIsUpdating(true)
+
+    try {
+      const response = await axios.post(
+        backendUrl + '/api/product/updateBestSeller',
+        { productId, bestseller: !isBestSeller },
+        { headers: { token } }
+      )
+      
+      if (response.data.success) {
+        toast.success(response.data.message)
+        fetchList()
+      } else {
+        toast.error(response.data.message)
+      }
+    } catch (e) {
+      console.log(e)
+      toast.error(e.message)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   useEffect(() => {
     fetchList()
   }, [])
@@ -106,11 +131,12 @@ const List = ({ token }) => {
 
       <div className='flex flex-col gap-2'>
 
-        <div className='hidden md:grid grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr] items-center py-1 px-2 border bg-gray-100 text-sm'>
+        <div className='hidden md:grid grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr_1fr] items-center py-1 px-2 border bg-gray-100 text-sm'>
           <b>Image</b>
           <b>Name</b>
           <b>Category</b>
           <b>Price</b>
+          <b className='text-center'>Best Seller</b>
           <b className='text-center'>Stock Status</b>
           <b className='text-center'>Delete</b>
         </div>
@@ -119,12 +145,28 @@ const List = ({ token }) => {
           filteredList.map((item, index) => (
             <div 
               key={index}
-              className='grid grid-cols-[1fr_3fr_1fr] md:grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr] items-center gap-2 py-1 px-2 border text-sm'
+              className='grid grid-cols-[1fr_3fr_1fr] md:grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr_1fr] items-center gap-2 py-1 px-2 border text-sm'
             >
               <img className='w-12' src={item.image[0]} alt=""/>
               <p>{item.name}</p>
               <p>{item.category}</p>
               <p>{currency}{item.price}</p>
+
+              <div className='flex justify-center'>
+                <button
+                  onClick={() => updateBestSeller(item._id, item.bestseller)}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    item.bestseller ? 'bg-green-500' : 'bg-gray-300'
+                  }`}
+                  disabled={isUpdating}
+                >
+                  <span
+                    className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                      item.bestseller ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
 
               <div className='text-right md:text-center'>
                 <select

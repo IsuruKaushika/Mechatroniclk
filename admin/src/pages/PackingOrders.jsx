@@ -201,14 +201,18 @@ const PackingOrders = ({ token }) => {
       </div>
 
       {/* Orders List */}
-      <div>
-        {orders.length > 0 ? (
-          orders.map((order, index) => (
-            <div className='grid grid-cols-1 sm:grid-cols-[0.5fr_2fr_1fr] lg:grid-cols-[0.5fr_2fr_1fr_1fr_1fr] gap-3 items-start border-2 border-gray-200 p-5 md:p-8 my-3 md:my-4 text-xs sm:text-sm text-gray-700' key={index}>
-              <img className='w-12' src={assets.parcel_icon} alt="Parcel" />
+        <div>
+          {orders.length > 0 ? (
+            orders.map((order, index) => (
+          <div className='grid grid-cols-1 sm:grid-cols-[0.5fr_2fr_1fr] lg:grid-cols-[0.5fr_2fr_1fr_1fr_1fr] gap-3 items-start border-2 border-gray-200 p-5 md:p-8 my-3 md:my-4 text-xs sm:text-sm text-gray-700' key={index}>
+            <div className='flex flex-col gap-2'>
+              {order.items.map((item, idx) => (
+            <img key={idx} className='w-20' src={item.image[0]} alt={item.name}/>
+              ))}
+            </div>
+            <div>
               <div>
-                <div>
-                  {order.items.map((item, index) => {
+            {order.items.map((item, index) => {
                     if (index == order.items.length - 1) {
                       return <p className='py-0.5' key={index}>{item.name} x {item.quantity}<span>{item.size}</span></p>
                     } else {
@@ -239,6 +243,7 @@ const PackingOrders = ({ token }) => {
                   <option value="Order Placed">Order Placed</option>
                   <option value="Print Label and Pack">Packing</option>
                   <option value="Delivered">Delivered</option>
+                  <option value="Cancelled">Cancelled</option>
                 </select>
                 <button
                   onClick={() => printLabel(order)}

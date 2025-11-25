@@ -2,6 +2,7 @@ import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import { sendOrderConfirmationEmail } from "../config/email.js";
 
 // Load environment variables
 dotenv.config();
@@ -27,7 +28,20 @@ const placeOrder = async(req, res) => {
         await newOrder.save()
 
         await userModel.findByIdAndUpdate(userId, {cartData: {}})
-
+        if (address?.email) {
+        try {
+            await sendOrderConfirmationEmail({
+            to: address.email,
+            orderId: newOrder._id,
+            items,
+            amount,
+            address,
+            paymentMethod: orderData.paymentMethod,
+            });
+        } catch (emailErr) {
+            console.error("Failed to send order confirmation email:", emailErr.message);
+        }
+        }
         res.json({success: true, message: "Order Placed Successfully"})
     } catch(error) {
         console.log(error)
