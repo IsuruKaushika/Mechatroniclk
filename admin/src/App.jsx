@@ -15,6 +15,7 @@ import Edit from './pages/Edit';
 import Login from './components/Login'
 import { useState } from 'react'
 import { useEffect } from 'react';
+import CancelledOrders from './pages/CancelledOrders';
 
 export const backendUrl = import.meta.env.VITE_BACKEND_URL
 export const currency ='Rs'
@@ -47,6 +48,7 @@ const App = () => {
             <Route path ="/Placedorders" element={<PlacedOrders token={token}/>} />
             <Route path ="/PackingOrders" element={<PackingOrders token={token}/>} />
             <Route path ="/DeliveredOrders" element={<DeliveredOrders token={token}/>} />
+            <Route path ="/CancelledOrders" element={<CancelledOrders token={token}/>} />
             <Route path ="/edit/:id" element={<Edit token={token}/>} />
             <Route path="/" element={<Add token={token}/>} />
 

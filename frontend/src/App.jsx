@@ -23,10 +23,11 @@ import Policy from './pages/Policy'
 
 const App = () => {
   return (
-    < div className='px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]'>
+    < div className='px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] max-w-[1920px] mx-auto '>
       <ToastContainer/>
       <ScrollToTop />
       <Navbar />
+      <div className="mt-[90px]">
       <SearchBar />
       <Routes>
         <Route path='/' element={<Home />} />
@@ -40,9 +41,9 @@ const App = () => {
         <Route path='/orders' element={<Orders/>} />
         <Route path='/terms-and-conditions' element={<Terms/>} />
         <Route path='/privacy-and-policy' element={<Policy/>} />
-        <Route path='/return-policy' element={<Returns/>} />
-                
-      </Routes>
+        <Route path='/return-policy' element={<Returns/>} />               
+      </Routes>  
+      </div>
       <WhatsAppFloat />
 
        <Footer/>
