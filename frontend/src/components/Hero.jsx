@@ -34,7 +34,7 @@ const Hero = () => {
   };
 
   return (
-    <div className='relative w-full overflow-hidden h-[350px] sm:h-[400px] lg:h-[450px] bg-gray-50'>
+    <div className='relative w-full overflow-hidden h-[350px] sm:h-[400px] lg:h-[500px] bg-gray-50'>
 
       {/* Slider images */}
       {sliderImages.map((image, index) => (

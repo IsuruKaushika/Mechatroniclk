@@ -2,6 +2,8 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContext';
 import { useContext } from 'react';
+import { assets } from '../assets/assets';
+import { BsCartPlus  } from "react-icons/bs";
 
 const ProductItem = ({id, image, name, price, stockStatus}) => {
     const {currency} = useContext(ShopContext);
@@ -46,12 +48,34 @@ const ProductItem = ({id, image, name, price, stockStatus}) => {
                 
                 {/* Stock Status Label - Bottom Right Corner of Image */}
                 {stockStatus && (
-                    <div className='absolute bottom-0 right-0 m-2 z-10'>
+                    <div className='absolute bottom-0 left-0 m-2 z-10'>
                         <span className={`text-xs font-medium px-2 py-1 inline-block rounded shadow-md ${getBadgeStyle()}`}>
                             {stockStatus}
                         </span>
                     </div>
                 )}
+                {/* Add to Cart button - Bottom Right Corner */}
+                <div className="absolute bottom-2 right-2 z-10">
+                    <ShopContext.Consumer>
+                        {({ addToCart }) => (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (typeof addToCart === 'function') addToCart(id, 1);
+                                }}
+                                className={`bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded shadow-md flex items-center justify-center ${stockStatus === 'Out of Stock' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                aria-label={`Add ${name} to cart`}
+                                title="Add to cart"
+                                disabled={stockStatus === 'Out of Stock'}
+                            >
+                                <BsCartPlus   className='w-4 text-white' alt="Add to cart"/>
+                            </button>
+                        )}
+                    </ShopContext.Consumer>
+                </div>
+
             </div>
             <div className='flex justify-between items-center pt-3 pb-1'>
                 <p className='text-sm'>{name}</p>

@@ -88,7 +88,7 @@ const Collection = () => {
   const applyFilter = () => {
     let productsCopy = products.slice();
 
-    if (showSearch && search) {
+    if (search) {
       productsCopy = productsCopy.filter(item =>
         item.name.toLowerCase().includes(search.toLowerCase())
       );
@@ -146,19 +146,19 @@ const Collection = () => {
   }, [sortType]);
 
   return (
-    <div className='flex flex-col sm:flex-row gap-1 sm:gap-10 pt-10 border-t'>
+    <div className='flex flex-col md:flex-row gap-1 sm:gap-10 pt-10'>
 
       {/* LEFT FILTER PANEL */}
-      <div className='min-w-60'>
+      <div className='min-w-44 lg:min-w-60'>
         <p
           onClick={() => setShowFilter(!showFilter)}
           className='my-2 text-xl flex items-center cursor-pointer gap-1'
         >
           FILTERS
-          <img className={`h-3 sm:hidden transition ${showFilter ? 'rotate-90' : ''}`} src={assets.dropdown_icon} />
+          <img className={`h-3 md:hidden transition ${showFilter ? 'rotate-90' : ''}`} src={assets.dropdown_icon} />
         </p>
 
-        <div className={`border border-gray-300 pl-4 py-3 mt-6 ${showFilter ? '' : 'hidden'} lg:block`}>
+        <div className={`border border-gray-300 pl-4 py-3 mt-6 ${showFilter ? '' : 'hidden'} md:block`}>
           <p className='mb-3 text-sm font-medium'>CATEGORIES</p>
 
           <div className='flex flex-col gap-2'>
@@ -216,7 +216,7 @@ const Collection = () => {
         </div>
 
         {/* PRODUCT GRID */}
-        <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6'>
+        <div className='grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 gap-y-6'>
           {filterProducts.map((item, index) => (
             <ProductItem
               key={index}

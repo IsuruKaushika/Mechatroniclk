@@ -41,7 +41,7 @@ const Cart = () => {
         <Title text1={'YOUR'} text2={'CART'}/>
       </div>
       <div>
-        {
+      {products.length>0 &&  (
         cartData.map((item,index)=>{
           const productData =products.find((product)=>product._id === item._id);
 
@@ -64,13 +64,19 @@ const Cart = () => {
           )
 
         })
-      }
+      )}
+      {cartData.length ===0 &&(
+        <div className='text-center my-20'>
+          <p className='text-gray-600 mb-6'>Your cart is currently empty.</p>
+          <button onClick={()=>navigate('/collection')} className='bg-black text-white px-6 py-3 text-sm'>CONTINUE SHOPPING</button>
+        </div>
+      )}
       </div>
-      <div className ='flex justify-end my-20'>
+      <div className ='flex justify-center sm:justify-end my-20'>
         <div className='w-full sm:w-[450px]'>
           <CartTotal/>
-          <div className = 'w-full text-end'>
-            <button onClick={()=>navigate('/place-order')} className ='bg-black text-white text-sm my-8 px-8 py-3'>PROCEED TO CHECKOUT</button>
+          <div className = 'w-full text-center sm:text-end'>
+            <button onClick={()=>navigate('/place-order')} className ='bg-black text-white text-sm my-8 px-6 py-3 disabled:bg-slate-500' disabled={cartData.length === 0}>PROCEED TO CHECKOUT</button>
           </div>
           </div>
     </div>
