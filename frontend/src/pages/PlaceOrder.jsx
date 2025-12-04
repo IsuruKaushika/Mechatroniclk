@@ -1,236 +1,245 @@
 import React, { useContext, useState } from "react";
 import Title from "../components/Title";
 import CartTotal from "../components/CartTotal";
-import { assets } from "../assets/assets";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { ShopContext } from "../context/ShopContext";
-// Add this import for MD5 hashing if needed for any client-side verification
-import md5 from 'crypto-js/md5';
+
+import { validatePlaceOrderForm } from "../utils/validatePlaceOrderForm";
 
 const PlaceOrder = () => {
-  const [method, setMethod] = useState("cod");
-  const {navigate, backendUrl, token, cartItems, setCartItems, getCartAmount, delivery_fee, products} = useContext(ShopContext);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+	const [method, setMethod] = useState("cod");
+	const { navigate, backendUrl, token, cartItems, setCartItems, getCartAmount, delivery_fee, products } =
+		useContext(ShopContext);
 
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    street: '',
-    city: '',
-    state: '',
-    zipcode: '',
-    country: '',
-    phone: ''
-  });
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const onChangeHandler = (event) => {
-    const name = event.target.name;
-    const value = event.target.value;
+	const [formData, setFormData] = useState({
+		firstName: "",
+		lastName: "",
+		email: "",
+		street: "",
+		city: "",
+		state: "",
+		zipcode: "",
+		country: "",
+		phone: "",
+	});
 
-    setFormData(data => ({...data, [name]: value}));
-  };
+	const [errors, setErrors] = useState({});
 
+	const onChangeHandler = (event) => {
+		setFormData({ ...formData, [event.target.name]: event.target.value });
+	};
 
+	const onSubmitHandler = async (event) => {
+		event.preventDefault();
 
-  // Function to add order to Google Sheets
-  const addOrderToGoogleSheet = async (orderData, orderId, status) => {
-    try {
-      // Format items for Google Sheets
-      const itemsFormatted = orderData.items.map(item => 
-        `${item.name} (${item.size}) x ${item.quantity}`
-      ).join("; ");
-      
-      // Format address for Google Sheets
-      const fullAddress = `${orderData.address.street}, ${orderData.address.city}, ${orderData.address.state}, ${orderData.address.zipcode}, ${orderData.address.country}`;
-      
-      // Create data object for Google Sheets
-      const sheetData = {
-        orderId: orderId,
-        orderStatus: status,
-        customerName: `${orderData.address.firstName} ${orderData.address.lastName}`,
-        email: orderData.address.email,
-        address: fullAddress,
-        items: itemsFormatted,
-        phoneNumber: orderData.address.phone,
-        paymentMethod: orderData.payment_method,
-        amount: orderData.amount,
-        orderedDate: new Date().toISOString()
-      };
-      
-      // Google Apps Script web app URL - Replace with your deployed web app URL
-      const googleSheetsUrl = "https://script.google.com/macros/s/**************/exec";
-      
-      // Send data to Google Sheets
-      const response = await axios.post(googleSheetsUrl, sheetData);
-      
-      // Log success but don't block the main flow
-      console.log("Order added to Google Sheet:", response.data);
-    } catch (error) {
-      // Log error but don't block the main flow
-      console.error("Failed to add order to Google Sheet:", error);
-      // We don't want to show an error toast here as it would confuse the user
-      // The order has been processed in the system, this is just a logging issue
-    }
-  };
+		if (isSubmitting) return;
 
-  const onSubmitHandler = async(event) => {
-    event.preventDefault();
-    
-    if (isSubmitting) {
-      return; // Prevent multiple submissions
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      let orderItems = [];
+		const { isValid, errors: validationErrors } = await validatePlaceOrderForm(formData);
 
-      for(const items in cartItems) {
-        for(const item in cartItems[items]) {
-          if(cartItems[items][item] > 0) {
-            const itemInfo = structuredClone(products.find(product => product._id === items));
-            if(itemInfo) {
-              itemInfo.size = item;
-              itemInfo.quantity = cartItems[items][item];
-              orderItems.push(itemInfo);
-            }
-          }
-        }
-      }
-      
-      let orderData = {
-        userId: localStorage.getItem('userId'), // Assuming you store userId in localStorage
-        address: formData,
-        items: orderItems,
-        amount: getCartAmount() + delivery_fee,
-        payment_method: method
-      };
-      
-      switch(method) {
-        // API calls COD
-        case 'cod':
-          const response = await axios.post(backendUrl + '/api/order/place', orderData, {headers: {token}});
-          
-          if(response.data.success) {
-            // Add order to Google Sheet
-            await addOrderToGoogleSheet(orderData, response.data.orderId, "Placed");
-            
-            toast.success(response.data.message);
-            setCartItems({});
-            navigate('/orders');
-          } else {
-            toast.error(response.data.message);
-          }
-          break;
+		if (!isValid) {
+			setErrors(validationErrors);
+			toast.error("Please fix the highlighted fields.");
+			return;
+		}
 
-        case 'payhere':
-          // First create an order with 'pending' status
-          const payhereResponse = await axios.post(
-            backendUrl + '/api/order/create-pending', 
-            orderData, 
-            {headers: {token}}
-          );
-          
-          if(payhereResponse.data.success) {
-            // Add order to Google Sheet with pending status
-            await addOrderToGoogleSheet(orderData, payhereResponse.data.orderId, "Pending Payment");
-            
-            // Initiate PayHere payment with the order ID, merchant ID, and hash received from backend
-            initiatePayherePayment(
-              orderData, 
-              payhereResponse.data.orderId,
-              payhereResponse.data.merchantId,
-              payhereResponse.data.sandbox,
-              payhereResponse.data.hash // Pass the hash from backend
-            );
-            setCartItems({});
-            
-          } else {
-            toast.error(payhereResponse.data.message || 'Failed to create order');
-          }
-          break;
+		setErrors({});
+		setIsSubmitting(true);
 
-        default:
-          break;
-      }
-    } catch(error) {
-      console.log(error);
-      toast.error('Something went wrong. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+		try {
+			let orderItems = [];
 
-  return (
-    <form onSubmit={onSubmitHandler} className="flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] px-4">
-      {/* ---------- Left Side (Delivery Information) ---------- */}
-      <div className="flex flex-col gap-4 w-full sm:max-w-[480px]">
-        <div className="text-xl sm:text-2xl my-3">
-          <Title text1={"DELIVERY"} text2={"INFORMATION"} />
-        </div>
+			for (const productId in cartItems) {
+				for (const size in cartItems[productId]) {
+					if (cartItems[productId][size] > 0) {
+						const info = structuredClone(products.find((p) => p._id === productId));
+						info.size = size;
+						info.quantity = cartItems[productId][size];
+						orderItems.push(info);
+					}
+				}
+			}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input required onChange={onChangeHandler} name='firstName' value={formData.firstName} className="border p-2 rounded w-full" type="text" placeholder="First name" />
-          <input required onChange={onChangeHandler} name='lastName' value={formData.lastName} className="border p-2 rounded w-full" type="text" placeholder="Last name" />
-        </div>
-        <input required onChange={onChangeHandler} name='email' value={formData.email} className="border p-2 rounded w-full" type="email" placeholder="Email address" />
-        <input required onChange={onChangeHandler} name='street' value={formData.street} className="border p-2 rounded w-full" type="text" placeholder="Street" />
+			const orderData = {
+				userId: localStorage.getItem("userId"),
+				address: formData,
+				items: orderItems,
+				amount: getCartAmount() + delivery_fee,
+				payment_method: method,
+			};
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input required onChange={onChangeHandler} name='city' value={formData.city} className="border p-2 rounded w-full" type="text" placeholder="City" />
-          <input required onChange={onChangeHandler} name='state' value={formData.state} className="border p-2 rounded w-full" type="text" placeholder="State" />
-        </div>
+			// COD ORDER
+			if (method === "cod") {
+				const response = await axios.post(backendUrl + "/api/order/place", orderData, { headers: { token } });
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input required onChange={onChangeHandler} name='zipcode' value={formData.zipcode} className="border p-2 rounded w-full" type="text" placeholder="Zipcode" />
-          <input required onChange={onChangeHandler} name='country' value={formData.country} className="border p-2 rounded w-full" type="text" placeholder="Country" />
-        </div>
+				if (response.data.success) {
+					toast.success("Order placed successfully!");
+					setCartItems({});
+					navigate("/orders");
+				} else {
+					toast.error(response.data.message);
+				}
+			}
+		} catch (error) {
+			console.log(error);
+			toast.error("Something went wrong.");
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
 
-        <input required onChange={onChangeHandler} name='phone' value={formData.phone} className="border p-2 rounded w-full" type="tel" placeholder="Phone" />
-      </div>
+	return (
+		<form
+			onSubmit={onSubmitHandler}
+			className="flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] px-4"
+		>
+			{/* LEFT SIDE */}
+			<div className="flex flex-col gap-4 w-full sm:max-w-[480px]">
+				<Title text1="DELIVERY" text2="INFORMATION" />
 
-      {/* ---------- Right Side (Cart Totals) ---------- */}
+				{/* FIRST + LAST NAME */}
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+					<div>
+						<input
+							name="firstName"
+							value={formData.firstName}
+							onChange={onChangeHandler}
+							className={`border p-2 rounded w-full ${errors.firstName ? "border-red-500" : ""}`}
+							placeholder="First name"
+						/>
+						{errors.firstName && <p className="text-red-500 text-xs">{errors.firstName}</p>}
+					</div>
 
-      <div className="mt-8 w-full sm:max-w-[480px]">
-        <div className="mt-8">
-          <CartTotal />
-        </div>
+					<div>
+						<input
+							name="lastName"
+							value={formData.lastName}
+							onChange={onChangeHandler}
+							className={`border p-2 rounded w-full ${errors.lastName ? "border-red-500" : ""}`}
+							placeholder="Last name"
+						/>
+						{errors.lastName && <p className="text-red-500 text-xs">{errors.lastName}</p>}
+					</div>
+				</div>
 
-        <div className="mt-12">
-          <Title text1={"PAYMENT"} text2={"METHOD"} />
-          {/*----Payment Method----*/}
-          <div className="flex gap-3 flex-col lg:flex-row">
-           
-            {/* Cash on Delivery (COD) */}
-            <div
-              onClick={() => setMethod("cod")}
-              className={`flex items-center gap-3 border p-2 px-3 cursor-pointer ${
-                method === "cod" ? "border-green-500" : "border-gray-300"
-              }`}
-            >
-              <p
-                className={`w-3.5 h-3.5 border rounded-full ${
-                  method === "cod" ? "bg-green-400" : "bg-gray-300"
-                }`}
-              ></p>
-              <p className="text-gray-500 text-sm font-medium mx-4">CASH ON DELIVERY</p>
-            </div>
-          </div>
-        </div>
+				{/* EMAIL */}
+				<div>
+					<input
+						name="email"
+						value={formData.email}
+						onChange={onChangeHandler}
+						className={`border p-2 rounded w-full ${errors.email ? "border-red-500" : ""}`}
+						placeholder="Email"
+					/>
+					{errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
+				</div>
 
-        {/* ---- Place Order Button ---- */}
-        <button 
-          type='submit' 
-          disabled={isSubmitting}
-          className={`w-full mt-6 ${isSubmitting ? 'bg-gray-500' : 'bg-black hover:bg-gray-800'} text-white py-3 rounded-md text-lg font-medium transition`}
-        >
-          {isSubmitting ? 'Processing...' : (method === 'payhere' ? 'Pay Now' : 'Place Order')}
-        </button>
-      </div>
-    </form>
-  );
+				{/* STREET */}
+				<div>
+					<input
+						name="street"
+						value={formData.street}
+						onChange={onChangeHandler}
+						className={`border p-2 rounded w-full ${errors.street ? "border-red-500" : ""}`}
+						placeholder="Street"
+					/>
+					{errors.street && <p className="text-red-500 text-xs">{errors.street}</p>}
+				</div>
+
+				{/* CITY + STATE */}
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+					<div>
+						<input
+							name="city"
+							value={formData.city}
+							onChange={onChangeHandler}
+							className={`border p-2 rounded w-full ${errors.city ? "border-red-500" : ""}`}
+							placeholder="City"
+						/>
+						{errors.city && <p className="text-red-500 text-xs">{errors.city}</p>}
+					</div>
+
+					<div>
+						<input
+							name="state"
+							value={formData.state}
+							onChange={onChangeHandler}
+							className={`border p-2 rounded w-full ${errors.state ? "border-red-500" : ""}`}
+							placeholder="State"
+						/>
+						{errors.state && <p className="text-red-500 text-xs">{errors.state}</p>}
+					</div>
+				</div>
+
+				{/* ZIP + COUNTRY */}
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+					<div>
+						<input
+							name="zipcode"
+							value={formData.zipcode}
+							onChange={onChangeHandler}
+							className={`border p-2 rounded w-full ${errors.zipcode ? "border-red-500" : ""}`}
+							placeholder="Zip code"
+						/>
+						{errors.zipcode && <p className="text-red-500 text-xs">{errors.zipcode}</p>}
+					</div>
+
+					<div>
+						<input
+							name="country"
+							value={formData.country}
+							onChange={onChangeHandler}
+							className={`border p-2 rounded w-full ${errors.country ? "border-red-500" : ""}`}
+							placeholder="Country"
+						/>
+						{errors.country && <p className="text-red-500 text-xs">{errors.country}</p>}
+					</div>
+				</div>
+
+				{/* PHONE */}
+				<div>
+					<input
+						name="phone"
+						value={formData.phone}
+						onChange={onChangeHandler}
+						className={`border p-2 rounded w-full ${errors.phone ? "border-red-500" : ""}`}
+						placeholder="Phone"
+					/>
+					{errors.phone && <p className="text-red-500 text-xs">{errors.phone}</p>}
+				</div>
+			</div>
+
+			{/* RIGHT SIDE */}
+			<div className="mt-8 w-full sm:max-w-[480px]">
+				<CartTotal />
+
+				<div className="mt-16">
+					<Title text1="PAYMENT" text2="METHOD" />
+
+					<div
+						onClick={() => setMethod("cod")}
+						className={`flex items-center gap-3 border p-2 cursor-pointer mt-0.5 ${
+							method === "cod" ? "border-green-500" : "border-gray-300"
+						}`}
+					>
+						<p className={`w-3.5 h-3.5 rounded-full ${method === "cod" ? "bg-green-500" : "bg-gray-300"}`} />
+						<p className="text-gray-600 text-sm">CASH ON DELIVERY</p>
+					</div>
+				</div>
+
+				<button
+					disabled={isSubmitting || getCartAmount() === 0}
+					className={`w-full mt-6 py-3 rounded-md text-white text-lg disabled:cursor-not-allowed disabled:bg-gray-500 ${
+						isSubmitting ? "bg-gray-500" : "bg-black hover:bg-gray-800"
+					}`}
+				>
+					{isSubmitting ? "Processing..." : "Place Order"}
+				</button>
+			</div>
+		</form>
+	);
 };
 
 export default PlaceOrder;

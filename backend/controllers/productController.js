@@ -110,10 +110,23 @@ const updateStockStatus = async(req, res) => {
     }
 }
 
+// Update product best seller status
+const updateBestSeller = async(req, res) => {
+    try {
+        const { productId, bestseller } = req.body
+        await productModel.findByIdAndUpdate(productId, { bestseller })
+        res.json({ success: true, message: "Best seller status updated successfully" })
+    } catch(error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
 export {
     singleProduct, 
     removeProduct, 
     listProducts, 
     addProduct,
-    updateStockStatus // New function export
+    updateStockStatus, // New function export
+    updateBestSeller
 }
