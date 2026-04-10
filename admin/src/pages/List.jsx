@@ -1,124 +1,133 @@
-import React from 'react'
-import { useEffect, useState } from 'react'
-import { backendUrl, currency } from '../App'
-import axios from 'axios'
-import { toast } from 'react-toastify'
+import React from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { backendUrl, currency } from "../App";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { FiEdit } from "react-icons/fi";
+import { FiEye } from "react-icons/fi";
 
 const List = ({ token }) => {
-  const [list, setList] = useState([])
-  const [isUpdating, setIsUpdating] = useState(false)
+  const [list, setList] = useState([]);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const navigate = useNavigate();
 
   // 👉 NEW: Search term state
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState("");
 
   const fetchList = async () => {
     try {
-      const response = await axios.get(backendUrl + '/api/product/list')
+      const response = await axios.get(backendUrl + "/api/product/list");
 
       if (response.data.success) {
-        setList(response.data.products)
+        setList(response.data.products);
       } else {
-        toast.error(response.data.message)
+        toast.error(response.data.message);
       }
     } catch (error) {
-      console.log(error)
-      toast.error(error.message)
+      console.log(error);
+      toast.error(error.message);
     }
-  }
+  };
 
   const removeProduct = async (id) => {
     try {
       const response = await axios.post(
-        backendUrl + '/api/product/remove',
+        backendUrl + "/api/product/remove",
         { id },
-        { headers: { token } }
-      )
-      
+        { headers: { token } },
+      );
+
       if (response.data.success) {
-        toast.success(response.data.message)
-        fetchList()
+        toast.success(response.data.message);
+        fetchList();
       } else {
-        toast.error(response.data.message)
+        toast.error(response.data.message);
       }
     } catch (e) {
-      console.log(e)
-      toast.error(e.message)
+      console.log(e);
+      toast.error(e.message);
     }
-  }
+  };
 
   const updateStock = async (productId, newStatus) => {
-    if (isUpdating) return
-    setIsUpdating(true)
+    if (isUpdating) return;
+    setIsUpdating(true);
     try {
       const response = await axios.post(
-        backendUrl + '/api/product/updateStockStatus',
+        backendUrl + "/api/product/updateStockStatus",
         { productId, stockStatus: newStatus },
-        { headers: { token } }
-      )
-      
+        { headers: { token } },
+      );
+
       if (response.data.success) {
-        toast.success(response.data.message)
-        fetchList()
+        toast.success(response.data.message);
+        fetchList();
       } else {
-        toast.error(response.data.message)
+        toast.error(response.data.message);
       }
     } catch (e) {
-      console.log(e)
-      toast.error(e.message)
+      console.log(e);
+      toast.error(e.message);
     } finally {
-      setIsUpdating(false)
+      setIsUpdating(false);
     }
-  }
+  };
 
   const updateBestSeller = async (productId, isBestSeller) => {
-    if (isUpdating) return
-    setIsUpdating(true)
+    if (isUpdating) return;
+    setIsUpdating(true);
 
     try {
       const response = await axios.post(
-        backendUrl + '/api/product/updateBestSeller',
+        backendUrl + "/api/product/updateBestSeller",
         { productId, bestseller: !isBestSeller },
-        { headers: { token } }
-      )
-      
+        { headers: { token } },
+      );
+
       if (response.data.success) {
-        toast.success(response.data.message)
-        fetchList()
+        toast.success(response.data.message);
+        fetchList();
       } else {
-        toast.error(response.data.message)
+        toast.error(response.data.message);
       }
     } catch (e) {
-      console.log(e)
-      toast.error(e.message)
+      console.log(e);
+      toast.error(e.message);
     } finally {
-      setIsUpdating(false)
+      setIsUpdating(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchList()
-  }, [])
+    fetchList();
+  }, []);
 
-  const stockOptions = ['In Stock', 'Out of Stock', 'Limited Stock']
+  const stockOptions = ["In Stock", "Out of Stock", "Limited Stock"];
 
   const getStatusColor = (status) => {
-    switch(status) {
-      case 'In Stock': return 'bg-green-500'
-      case 'Out of Stock': return 'bg-red-500'
-      case 'Limited Stock': return 'bg-yellow-500'
-      default: return 'bg-gray-500'
+    switch (status) {
+      case "In Stock":
+        return "bg-green-500";
+      case "Out of Stock":
+        return "bg-red-500";
+      case "Limited Stock":
+        return "bg-yellow-500";
+      default:
+        return "bg-gray-500";
     }
-  }
+  };
 
   // 👉 NEW: Filter products based on searchTerm
-  const filteredList = list.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredList = list.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   return (
     <>
-      <p className='mb-2 text-lg font-semibold'>All Product List</p>
+      <p className="mb-2 text-lg font-semibold">All Product List</p>
 
       {/* 👉 NEW: Search Bar */}
       <input
@@ -129,74 +138,106 @@ const List = ({ token }) => {
         className="w-full p-2 mb-3 border rounded"
       />
 
-      <div className='flex flex-col gap-2'>
-
-        <div className='hidden md:grid grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr_1fr] items-center py-1 px-2 border bg-gray-100 text-sm'>
+      <div className="flex flex-col gap-2">
+        <div className="hidden md:grid grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr] items-center py-1 px-2 border bg-gray-100 text-sm">
           <b>Image</b>
           <b>Name</b>
           <b>Category</b>
           <b>Price</b>
-          <b className='text-center'>Best Seller</b>
-          <b className='text-center'>Stock Status</b>
-          <b className='text-center'>Delete</b>
+          <b className="text-center">Best Seller</b>
+          <b className="text-center">Stock Status</b>
+          <b className="text-center">View</b>
+          <b className="text-center">Edit</b>
+          <b className="text-center">Delete</b>
         </div>
 
-        {
-          filteredList.map((item, index) => (
-            <div 
-              key={index}
-              className='grid grid-cols-[1fr_3fr_1fr] md:grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr_1fr] items-center gap-2 py-1 px-2 border text-sm'
+        {filteredList.map((item, index) => (
+          <div
+            key={index}
+            className="grid grid-cols-[1fr_3fr_1fr] md:grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr] items-center gap-2 py-1 px-2 border text-sm"
+          >
+            <img
+              className="w-12 hover:cursor-pointer"
+              src={item.image[0]}
+              alt=""
+              onClick={() => navigate(`/view/${item._id}`)}
+            />
+            <p
+              onClick={() => navigate(`/view/${item._id}`)}
+              className="hover:underline cursor-pointer"
             >
-              <img className='w-12' src={item.image[0]} alt=""/>
-              <p>{item.name}</p>
-              <p>{item.category}</p>
-              <p>{currency}{item.price}</p>
+              {item.name}
+            </p>
+            <p>{item.category}</p>
+            <p>
+              {currency}
+              {item.price}
+            </p>
 
-              <div className='flex justify-center'>
-                <button
-                  onClick={() => updateBestSeller(item._id, item.bestseller)}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    item.bestseller ? 'bg-green-500' : 'bg-gray-300'
+            <div className="flex justify-center">
+              <button
+                onClick={() => updateBestSeller(item._id, item.bestseller)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  item.bestseller ? "bg-green-500" : "bg-gray-300"
+                }`}
+                disabled={isUpdating}
+              >
+                <span
+                  className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    item.bestseller ? "translate-x-6" : "translate-x-0"
                   }`}
-                  disabled={isUpdating}
-                >
-                  <span
-                    className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                      item.bestseller ? 'translate-x-6' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className='text-right md:text-center'>
-                <select
-                  value={item.stockStatus}
-                  onChange={(e) => updateStock(item._id, e.target.value)}
-                  className={`px-2 py-1 rounded text-white cursor-pointer ${getStatusColor(item.stockStatus)}`}
-                  disabled={isUpdating}
-                >
-                  {stockOptions.map(option => (
-                    <option key={option} value={option} className="bg-white text-gray-800">
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <p onClick={() => removeProduct(item._id)} className='text-right md:text-center cursor-pointer text-red-500 text-lg'>X</p>
+                />
+              </button>
             </div>
-          ))
-        }
+
+            <div className="text-right md:text-center">
+              <select
+                value={item.stockStatus}
+                onChange={(e) => updateStock(item._id, e.target.value)}
+                className={`px-2 py-1 rounded text-white cursor-pointer ${getStatusColor(item.stockStatus)}`}
+                disabled={isUpdating}
+              >
+                {stockOptions.map((option) => (
+                  <option key={option} value={option} className="bg-white text-gray-800">
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="text-right md:text-center flex justify-center">
+              <button
+                onClick={() => navigate(`/view/${item._id}`)}
+                className="text-gray-700 hover:text-black"
+              >
+                <FiEye />
+              </button>
+            </div>
+
+            <div className="text-right md:text-center flex justify-center">
+              <button
+                onClick={() => navigate(`/edit/${item._id}`)}
+                className="text-blue-600 hover:underline"
+              >
+                <FiEdit />
+              </button>
+            </div>
+
+            <p
+              onClick={() => removeProduct(item._id)}
+              className="text-right md:text-center cursor-pointer text-red-500 text-lg"
+            >
+              X
+            </p>
+          </div>
+        ))}
 
         {filteredList.length === 0 && (
-          <div className="py-4 text-center text-gray-500">
-            No products match your search
-          </div>
+          <div className="py-4 text-center text-gray-500">No products match your search</div>
         )}
-
       </div>
     </>
-  )
-}
+  );
+};
 
-export default List
+export default List;
