@@ -1,12 +1,110 @@
-import React, { useEffect, useState } from 'react';
-import { assets } from '../assets/assets';
-import axios from 'axios';
-import { backendUrl } from '../App';
-import { toast } from 'react-toastify';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { assets } from "../assets/assets";
+import { backendUrl } from "../App";
+import { IoIosClose } from "react-icons/io";
+
+const SUBCATEGORY_OPTIONS = {
+  "Passive Components": [
+    "Resistors",
+    "Capacitors",
+    "Inductors, Chokes & Coils",
+    "Filters",
+    "Frequency Control & Timing Devices",
+    "Encoders",
+    "Potentiometers, Trimmers & Rheostats",
+    "Antenna Accessories",
+    "Thermistors - NTC",
+  ],
+  "Active Components": ["Diodes", "Transistors (BJT, MOSFET)", "Thyristors"],
+  "Integrated Circuits (ICs)": [
+    "Microcontrollers",
+    "Microprocessors",
+    "Logic ICs",
+    "Amplifiers",
+    "Power Management",
+  ],
+  Electromechanical: ["Switches", "Relays", "Motors and Drivers", "Solenoids"],
+  Connectors: ["Headers", "Terminal Blocks", "RF/Coaxial Connectors", "Cable Assemblies"],
+  "Development Tools": ["Development Boards (Arduino, Raspberry Pi)", "Breadboards"],
+  "Power Supplies": [
+    "AC Power Supplies",
+    "DC Power Supplies",
+    "AC/DC Converters",
+    "DC/DC Converters",
+    "Batteries",
+    "Battery Holders",
+    "Transformers",
+  ],
+};
+
+const compressImage = async (file, maxSizeMB = 2, qualityTarget = 0.8) => {
+  if (file.size / 1024 / 1024 < maxSizeMB) return file;
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+
+      img.onload = () => {
+        const originalSize = file.size / 1024 / 1024;
+        let quality = qualityTarget;
+
+        if (originalSize > 8) quality = 0.5;
+        else if (originalSize > 5) quality = 0.6;
+        else if (originalSize > 3) quality = 0.7;
+
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        const MAX_DIMENSION = 2000;
+        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+          const aspectRatio = width / height;
+          if (width > height) {
+            width = MAX_DIMENSION;
+            height = Math.round(width / aspectRatio);
+          } else {
+            height = MAX_DIMENSION;
+            width = Math.round(height * aspectRatio);
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            const newFile = new File([blob], file.name, { type: file.type });
+
+            if (newFile.size / 1024 / 1024 > maxSizeMB && quality > 0.3) {
+              compressImage(file, maxSizeMB, quality - 0.1).then(resolve);
+            } else {
+              resolve(newFile);
+            }
+          },
+          file.type,
+          quality,
+        );
+      };
+    };
+  });
+};
 
 const Edit = ({ token }) => {
   const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [compressing, setCompressing] = useState(false);
 
   const [image1, setImage1] = useState(false);
   const [image2, setImage2] = useState(false);
@@ -17,63 +115,74 @@ const Edit = ({ token }) => {
     image1: null,
     image2: null,
     image3: null,
-    image4: null
+    image4: null,
   });
+  const [removeImageIndexes, setRemoveImageIndexes] = useState([]);
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Men');
-  const [subCategory, setSubCategory] = useState('TopWear');
-  const [price, setPrice] = useState('');
-  const [sizes, setSizes] = useState([]);
+  const [totalSize, setTotalSize] = useState(0);
+  const MAX_TOTAL_SIZE = 9;
+
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("Development Tools");
+  const [subCategory, setSubCategory] = useState("");
+  const [price, setPrice] = useState("");
   const [bestseller, setBestseller] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [stockStatus, setStockStatus] = useState("In Stock");
 
-  // Fetch product details
+  useEffect(() => {
+    const availableSub = SUBCATEGORY_OPTIONS[category];
+    if (!availableSub || availableSub.length === 0) {
+      setSubCategory("");
+      return;
+    }
+
+    if (!availableSub.includes(subCategory)) {
+      setSubCategory(availableSub[0]);
+    }
+  }, [category, subCategory]);
+
+  useEffect(() => {
+    let size = 0;
+    if (image1) size += image1.size;
+    if (image2) size += image2.size;
+    if (image3) size += image3.size;
+    if (image4) size += image4.size;
+    setTotalSize(size / (1024 * 1024));
+  }, [image1, image2, image3, image4]);
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        setLoading(true);
-        // Add trailing slash to backendUrl if needed
-        const baseUrl = backendUrl.endsWith('/') ? backendUrl : `${backendUrl}/`;
-        
-        console.log('Fetching product with ID:', id);
-        // Using the correct endpoint that matches your API route
-        const response = await axios.get(`${baseUrl}api/product/${id}`, {
-          headers: { token }
+        const response = await axios.get(`${backendUrl}/api/product/${id}`, {
+          headers: { token },
         });
-        
-        console.log('API Response:', response.data);
-        
+
+        if (!response.data.success || !response.data.product) {
+          toast.error(response.data.message || "Failed to load product");
+          navigate("/list");
+          return;
+        }
+
         const product = response.data.product;
 
-        if (product) {
-          setName(product.name);
-          setDescription(product.description);
-          setCategory(product.category);
-          setSubCategory(product.subCategory);
-          setPrice(product.price);
-          setSizes(product.sizes || []);
-          setBestseller(product.bestseller);
+        setName(product.name || "");
+        setDescription(product.description || "");
+        setCategory(product.category || "Development Tools");
+        setSubCategory(product.subCategory || "");
+        setPrice(product.price || "");
+        setBestseller(Boolean(product.bestseller));
+        setStockStatus(product.stockStatus || "In Stock");
 
-          // Handle image array structure from backend
-          // Your backend stores images in an array called 'image'
-          setDisplayImages({
-            image1: product.image?.[0] || null,
-            image2: product.image?.[1] || null,
-            image3: product.image?.[2] || null,
-            image4: product.image?.[3] || null
-          });
-          
-          setLoading(false);
-        } else {
-          throw new Error('Product not found');
-        }
+        setDisplayImages({
+          image1: product.image?.[0] || null,
+          image2: product.image?.[1] || null,
+          image3: product.image?.[2] || null,
+          image4: product.image?.[3] || null,
+        });
       } catch (error) {
-        console.error('Fetch product error:', error);
-        setError(error.response?.data?.message || 'Failed to load product');
-        toast.error(error.response?.data?.message || 'Failed to load product');
+        toast.error(error.response?.data?.message || "Failed to load product");
+      } finally {
         setLoading(false);
       }
     };
@@ -81,117 +190,164 @@ const Edit = ({ token }) => {
     if (id) {
       fetchProduct();
     }
-  }, [id, token]);
+  }, [id, token, navigate]);
 
-  // Handle new image selection
-  const handleImageSelect = (e, imageNumber) => {
+  const handleImageSelect = async (e, setImageFunction, key) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Map the image number to the state setter function
-    const setters = {
-      1: setImage1,
-      2: setImage2,
-      3: setImage3,
-      4: setImage4
-    };
-    
-    // Use the correct setter function
-    setters[imageNumber](file);
-    
-    // Update display image
-    const imageKey = `image${imageNumber}`;
+    const imageIndex = Number(key.replace("image", "")) - 1;
+
+    try {
+      setCompressing(true);
+
+      setDisplayImages((prev) => ({
+        ...prev,
+        [key]: URL.createObjectURL(file),
+      }));
+
+      const compressedFile = await compressImage(file, 2);
+      setImageFunction(compressedFile);
+      setRemoveImageIndexes((prev) => prev.filter((index) => index !== imageIndex));
+    } finally {
+      setCompressing(false);
+    }
+  };
+
+  const handleImageRemove = (key, index) => {
+    [setImage1, setImage2, setImage3, setImage4][index](false);
+
     setDisplayImages((prev) => ({
       ...prev,
-      [imageKey]: URL.createObjectURL(file)
+      [key]: null,
     }));
+
+    setRemoveImageIndexes((prev) => {
+      if (prev.includes(index)) return prev;
+      return [...prev, index];
+    });
   };
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
+    if (totalSize > MAX_TOTAL_SIZE) {
+      toast.error(`Total image size exceeds ${MAX_TOTAL_SIZE}MB`);
+      return;
+    }
+
+    const hasAtLeastOneImage = Object.values(displayImages).some((image) => Boolean(image));
+    if (!hasAtLeastOneImage) {
+      toast.error("At least one product image is required");
+      return;
+    }
+
+    setSaving(true);
+
     try {
       const formData = new FormData();
-      formData.append('name', name);
-      formData.append('description', description);
-      formData.append('category', category);
-      formData.append('subCategory', subCategory);
-      formData.append('price', price);
-      formData.append('sizes', JSON.stringify(sizes));
-      formData.append('bestseller', bestseller);
+      formData.append("name", name);
+      formData.append("description", description);
+      formData.append("category", category);
+      formData.append("subCategory", subCategory);
+      formData.append("price", price);
+      formData.append("bestseller", bestseller);
+      formData.append("stockStatus", stockStatus);
 
-      if (image1) formData.append('image1', image1);
-      if (image2) formData.append('image2', image2);
-      if (image3) formData.append('image3', image3);
-      if (image4) formData.append('image4', image4);
+      if (image1) formData.append("image1", image1);
+      if (image2) formData.append("image2", image2);
+      if (image3) formData.append("image3", image3);
+      if (image4) formData.append("image4", image4);
+      if (removeImageIndexes.length > 0) {
+        formData.append("removeImageIndexes", JSON.stringify(removeImageIndexes));
+      }
 
-      const toastId = toast.loading('Updating product...');
-      
-      // Add trailing slash to backendUrl if needed
-      const baseUrl = backendUrl.endsWith('/') ? backendUrl : `${backendUrl}/`;
+      const toastId = toast.loading("Updating product...");
 
-      const response = await axios.put(`${baseUrl}api/product/${id}`, formData, {
-        headers: { token }
+      const response = await axios.put(`${backendUrl}/api/product/update/${id}`, formData, {
+        headers: { token },
+        timeout: 60000,
       });
 
       if (response.data.success) {
         toast.update(toastId, {
           render: response.data.message,
-          type: 'success',
+          type: "success",
           isLoading: false,
-          autoClose: 5000
+          autoClose: 2500,
         });
+        navigate("/list");
       } else {
         toast.update(toastId, {
           render: response.data.message,
-          type: 'error',
+          type: "error",
           isLoading: false,
-          autoClose: 5000
+          autoClose: 3000,
         });
       }
     } catch (error) {
-      console.error('Update product error:', error);
-      toast.error(error.response?.data?.message || 'Failed to update product');
+      toast.error(error.response?.data?.message || "Failed to update product");
+    } finally {
+      setSaving(false);
     }
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading product data...</div>;
-  }
-
-  if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
+    return <div className="py-4">Loading product...</div>;
   }
 
   return (
     <form onSubmit={onSubmitHandler} className="flex flex-col w-full items-start gap-3">
       <div>
-        <p className="mb-2">Edit Images</p>
-        <div className="flex gap-2">
-          {[1, 2, 3, 4].map((i) => (
-            <label htmlFor={`image${i}`} key={i} className="cursor-pointer">
-              <img
-                className="w-20 h-20 object-cover border"
-                src={displayImages[`image${i}`] || assets.upload_area}
-                alt=""
-              />
+        <p>Edit Images {compressing && "(Processing...)"}</p>
+        <div className="flex gap-2 mt-2">
+          {["image1", "image2", "image3", "image4"].map((key, index) => (
+            <div key={key} className="relative">
+              <label htmlFor={key} className="cursor-pointer block">
+                <img
+                  className="w-20 h-20 border object-cover"
+                  src={displayImages[key] || assets.upload_area}
+                  alt=""
+                />
+                <input
+                  type="file"
+                  id={key}
+                  hidden
+                  accept="image/*"
+                  disabled={compressing || saving}
+                  onChange={(e) =>
+                    handleImageSelect(e, [setImage1, setImage2, setImage3, setImage4][index], key)
+                  }
+                />
+              </label>
+              {displayImages[key] && (
+                <button
+                  type="button"
+                  onClick={() => handleImageRemove(key, index)}
+                  className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-black text-white text-xs"
+                  disabled={saving || compressing}
+                >
+                  <IoIosClose className="m-auto w-full h-full" />
+                </button>
+              )}
               <input
-                onChange={(e) => handleImageSelect(e, i)}
-                type="file"
-                id={`image${i}`}
-                hidden
-                accept="image/*"
+                type="hidden"
+                value={removeImageIndexes.includes(index) ? "removed" : "active"}
+                readOnly
               />
-            </label>
+            </div>
           ))}
         </div>
+        <p className={`text-sm ${totalSize > MAX_TOTAL_SIZE ? "text-red-600" : "text-gray-600"}`}>
+          New uploads: {totalSize.toFixed(2)} MB / {MAX_TOTAL_SIZE} MB
+        </p>
       </div>
 
       <div className="w-full">
         <p>Product Name</p>
         <input
-          onChange={(e) => setName(e.target.value)}
           value={name}
+          onChange={(e) => setName(e.target.value)}
           className="w-full max-w-[500px] px-3 py-2"
           type="text"
           required
@@ -201,95 +357,85 @@ const Edit = ({ token }) => {
       <div className="w-full">
         <p>Product Description</p>
         <textarea
-          onChange={(e) => setDescription(e.target.value)}
           value={description}
+          onChange={(e) => setDescription(e.target.value)}
           className="w-full max-w-[500px] px-3 py-2"
           required
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2 w-full sm:gap-8">
+      <div className="flex flex-col sm:flex-row gap-5 w-full mt-3">
         <div>
-          <p className="mb-2">Product Category</p>
+          <p className="mb-2">Category</p>
           <select
-            onChange={(e) => setCategory(e.target.value)}
             value={category}
-            className="w-full max-w-[500px] px-3 py-2"
-            required
+            onChange={(e) => setCategory(e.target.value)}
+            className="px-3 py-2"
           >
-            <option value="Men">Men</option>
-            <option value="Women">Women</option>
-            <option value="Kids">Kids</option>
+            {Object.keys(SUBCATEGORY_OPTIONS).map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
           </select>
         </div>
 
         <div>
-          <p className="mb-2">Product SubCategory</p>
+          <p className="mb-2">Sub Category</p>
           <select
-            onChange={(e) => setSubCategory(e.target.value)}
             value={subCategory}
-            className="w-full max-w-[500px] px-3 py-2"
-            required
+            onChange={(e) => setSubCategory(e.target.value)}
+            className="px-3 py-2"
           >
-            <option value="TopWear">TopWear</option>
-            <option value="BottomWear">BottomWear</option>
-            <option value="WinterWear">WinterWear</option>
+            {SUBCATEGORY_OPTIONS[category]?.map((sub) => (
+              <option key={sub} value={sub}>
+                {sub}
+              </option>
+            ))}
           </select>
         </div>
 
         <div>
-          <p className="mb-2">Product Price</p>
+          <p className="mb-2">Price</p>
           <input
-            onChange={(e) => setPrice(e.target.value)}
             value={price}
-            className="w-full max-w-[180px] px-2 py-2"
+            onChange={(e) => setPrice(e.target.value)}
             type="number"
-            placeholder="0"
+            className="px-3 py-2 w-[120px]"
             required
           />
         </div>
-      </div>
 
-      <div>
-        <p className="mb-2">Product Sizes</p>
-        <div className="flex gap-3">
-          {["S", "M", "L", "XL", "XXL"].map((size) => (
-            <div
-              key={size}
-              onClick={() =>
-                setSizes((prev) =>
-                  prev.includes(size)
-                    ? prev.filter((item) => item !== size)
-                    : [...prev, size]
-                )
-              }
-            >
-              <p
-                className={`${
-                  sizes.includes(size) ? "bg-blue-200" : "bg-slate-200"
-                } px-3 py-1 cursor-pointer`}
-              >
-                {size}
-              </p>
-            </div>
-          ))}
+        <div>
+          <p className="mb-2">Stock Status</p>
+          <select
+            value={stockStatus}
+            onChange={(e) => setStockStatus(e.target.value)}
+            className="px-3 py-2"
+          >
+            <option value="In Stock">In Stock</option>
+            <option value="Limited Stock">Limited Stock</option>
+            <option value="Out of Stock">Out of Stock</option>
+          </select>
         </div>
       </div>
 
       <div className="flex gap-2 mt-2">
         <input
-          onChange={() => setBestseller((prev) => !prev)}
-          checked={bestseller}
           type="checkbox"
-          id="bestseller"
+          checked={bestseller}
+          onChange={() => setBestseller(!bestseller)}
+          disabled={saving}
         />
-        <label className="cursor-pointer" htmlFor="bestseller">
-          Add to BestSeller
-        </label>
+        <label>Add to BestSeller</label>
       </div>
 
-      <button type="submit" className="w-28 py-3 mt-4 bg-black text-white">
-        Update
+      <button
+        type="submit"
+        className="w-28 py-3 mt-4 bg-black text-white disabled:bg-gray-400"
+        disabled={saving || compressing}
+      >
+        {saving ? "Saving..." : "UPDATE"}
       </button>
     </form>
   );
