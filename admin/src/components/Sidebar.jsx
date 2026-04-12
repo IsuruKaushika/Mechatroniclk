@@ -6,6 +6,7 @@ import { LuLayoutDashboard, LuPackageSearch } from "react-icons/lu";
 import { LuPackageOpen } from "react-icons/lu";
 import { GiBoxUnpacking } from "react-icons/gi";
 import { FiPlusCircle } from "react-icons/fi";
+import { FiMessageSquare } from "react-icons/fi";
 
 const Sidebar = () => {
   return (
@@ -41,6 +42,14 @@ const Sidebar = () => {
         >
           <FiUsers className="w-5 h-5" />
           <p className="hidden md:block">Customers</p>
+        </NavLink>
+
+        <NavLink
+          className="flex items-center gap-3 border border-gray-300 border-r-0 px-3 py-2 rounded-l"
+          to="/chat"
+        >
+          <FiMessageSquare className="w-5 h-5" />
+          <p className="hidden md:block">Customer Chat</p>
         </NavLink>
         <NavLink
           className="flex items-center gap-3 border border-gray-300 border-r-0 px-3 py-2 rounded-l"

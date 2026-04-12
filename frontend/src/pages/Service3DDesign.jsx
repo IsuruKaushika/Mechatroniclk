@@ -9,6 +9,7 @@ import PreviousWorks from "../components/Service3D/PreviousWorks";
 import ServiceFAQ from "../components/Service3D/ServiceFAQ";
 import ServiceCustomOffer from "../components/Service3D/ServiceCustomOffer";
 import ServiceReviews from "../components/Service3D/ServiceReviews";
+import ChatButton from "../components/Chat/ChatButton";
 // Data
 const heroProjects = [
   {
@@ -168,6 +169,11 @@ const Service3DDesign = () => {
 
   return (
     <div className="pb-24 text-slate-800 lg:pb-16">
+      {/* Chat Button - Only visible on this service page */}
+      <ChatButton
+        sellerId="c4b18e3a-7715-5f27-a48f-d381a9a8e517"
+        sellerName="MechatronicLK Studio"
+      />
       {/* Carousel + Packages Grid */}
       <section className="grid gap-8 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_380px]">
         {/* Left Side: Carousel */}
@@ -202,18 +208,6 @@ const Service3DDesign = () => {
             <ServiceFAQ />
             <ServiceCustomOffer />
           </section>
-
-          {/* Mobile Bottom Action Bar */}
-          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-4 backdrop-blur lg:hidden">
-            <div className="grid grid-cols-2 gap-3">
-              <button className="rounded-md border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900">
-                Chat
-              </button>
-              <button className="rounded-md bg-[#1dbf73] px-4 py-3 text-sm font-semibold text-white">
-                Continue - US$100
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Right Side: Sticky Packages */}
