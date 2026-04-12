@@ -24,15 +24,12 @@ const ServiceCustomOffer = () => {
 
       <div className="mt-8 rounded-2xl border border-white/15 bg-white/5 p-5">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
-          Realtime Chatbox
+          Realtime Chat
         </p>
         <p className="mt-3 text-sm leading-7 text-slate-200">
-          UI is ready for Fiverr-style messaging. Next step is connecting Supabase Realtime channels
-          and message persistence.
+          Chat directly with the seller. Real-time messaging, file uploads, and instant
+          notifications. Use the floating chat button at the bottom right to start messaging!
         </p>
-        <button className="mt-4 w-full rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-100">
-          Open Chatbox (Coming Soon)
-        </button>
       </div>
     </div>
   );
