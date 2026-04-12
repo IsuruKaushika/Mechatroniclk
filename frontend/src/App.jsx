@@ -20,6 +20,7 @@ import ScrollToTop from './components/ScrollToTop'
 import {ToastContainer,toast} from 'react-toastify'//used for notifications
 import 'react-toastify/dist/ReactToastify.css'
 import Policy from './pages/Policy'
+import Service3DDesign from './pages/Service3DDesign'
 
 const App = () => {
   return (
@@ -34,6 +35,7 @@ const App = () => {
         <Route path='/collection' element={<Collection/>} />
         <Route path='/contact' element={<Contact/>} />
         <Route path='/about' element={<About />} />
+        <Route path='/services/3d-design' element={<Service3DDesign />} />
         <Route path='/product/:productId' element={<Product/>} />
         <Route path='/login' element={<Login/>} />
         <Route path='/place-order' element={<PlaceOrder/>} />
