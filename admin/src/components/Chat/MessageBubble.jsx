@@ -31,17 +31,34 @@ const formatTime = (timestamp) => {
   return `${dateStr} ${timeStr}`;
 };
 
+const isPreviewableImage = (message) => {
+  const fileName = (message.file_name || "").toLowerCase();
+  const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg"];
+
+  if (message.media_type === "image") {
+    return imageExtensions.some((extension) => fileName.endsWith(extension)) || !message.file_name;
+  }
+
+  return false;
+};
+
 const MessageBubble = ({ message, isOwn, showAvatar }) => {
-  const isImage = message.media_type === "image" && message.media_url;
+  const isImage = isPreviewableImage(message) && message.media_url;
+  const hasAttachment = Boolean(message.media_url);
+  const attachmentLabel = message.file_name || "Download file";
+  const attachmentUrl = message.media_url || message.download_url;
 
   return (
-    <div className={`flex gap-2 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
+    <div className={`flex items-end gap-2 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
       {/* Avatar */}
       {showAvatar && !isOwn && (
-        <div className="mt-auto flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-200 text-xs font-semibold text-blue-700">
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-200 text-xs font-semibold text-blue-700">
           C
         </div>
       )}
+
+      {/* Avatar Placeholder for alignment */}
+      {!showAvatar && !isOwn && <div className="h-8 w-8 flex-shrink-0" />}
 
       {/* Message Content */}
       <div className={`flex max-w-xs flex-col ${isOwn ? "items-end" : "items-start"}`}>
@@ -66,11 +83,12 @@ const MessageBubble = ({ message, isOwn, showAvatar }) => {
           )}
 
           {/* File Content */}
-          {message.media_type === "file" && message.media_url && (
+          {hasAttachment && !isImage && (
             <a
-              href={message.media_url}
+              href={attachmentUrl}
               target="_blank"
               rel="noopener noreferrer"
+              download={message.file_name || undefined}
               className={`mt-2 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
                 isOwn ? "bg-blue-700 hover:bg-blue-800" : "bg-gray-200 hover:bg-gray-300"
               }`}
@@ -83,7 +101,7 @@ const MessageBubble = ({ message, isOwn, showAvatar }) => {
                   d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4m-4-4l-8 8m0 0l4-4m-4 4h8"
                 />
               </svg>
-              {message.file_name || "Download file"}
+              <span className="break-all">{attachmentLabel}</span>
             </a>
           )}
         </div>

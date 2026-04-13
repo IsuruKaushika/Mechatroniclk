@@ -13,25 +13,25 @@ import ChatButton from "../components/Chat/ChatButton";
 // Data
 const heroProjects = [
   {
-    image: assets.slide1,
+    image: assets.designProject1,
     title: "Industrial Product Render",
     subtitle: "Clean visuals for client presentations",
     category: "Render",
   },
   {
-    image: assets.slide2,
+    image: assets.designProject2,
     title: "Consumer Device Concept",
     subtitle: "Product-focused 3D marketing shots",
     category: "Marketing",
   },
   {
-    image: assets.slide3,
+    image: assets.designProject3,
     title: "Mechanical Assembly Visual",
     subtitle: "Detailed modeling and realistic lighting",
     category: "Engineering",
   },
   {
-    image: assets.slide4,
+    image: assets.designProject4,
     title: "Retail Product Showcase",
     subtitle: "Professional renders ready for launch",
     category: "Ecommerce",
@@ -40,22 +40,22 @@ const heroProjects = [
 
 const portfolioItems = [
   {
-    image: assets.slide1,
+    image: assets.designProject1,
     title: "Exploded Mechanical Assembly",
     category: "Engineering Visual",
   },
   {
-    image: assets.slide2,
+    image: assets.designProject2,
     title: "Smart Device Product Launch",
     category: "Marketing Render",
   },
   {
-    image: assets.slide3,
+    image: assets.designProject3,
     title: "Packaging + Product Scene",
     category: "Ecommerce Asset",
   },
   {
-    image: assets.slide4,
+    image: assets.designProject4,
     title: "Concept Model to Final Render",
     category: "Concept Visualization",
   },
@@ -148,7 +148,7 @@ const reviewCards = [
       "Professional, responsive, and very easy to work with. The final model looked polished and the delivery was faster than expected.",
     price: "US$50-US$100",
     duration: "1 day",
-    image: assets.slide1,
+    image: assets.designProject1,
   },
   {
     initials: "R",
@@ -160,7 +160,7 @@ const reviewCards = [
       "Great attention to detail and strong communication throughout the project. The render quality was perfect for our presentation.",
     price: "US$100-US$180",
     duration: "4 days",
-    image: assets.slide2,
+    image: assets.designProject2,
   },
 ];
 

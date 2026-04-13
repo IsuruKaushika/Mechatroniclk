@@ -11,6 +11,20 @@ const AdminChat = ({ token, backendUrl }) => {
   const [loading, setLoading] = useState(true);
   const [adminId, setAdminId] = useState(null);
   const [error, setError] = useState(null);
+  const [isPageVisible, setIsPageVisible] = useState(
+    typeof document === "undefined" ? true : document.visibilityState === "visible",
+  );
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(document.visibilityState === "visible");
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   // Get admin ID from JWT token
   useEffect(() => {
@@ -55,9 +69,9 @@ const AdminChat = ({ token, backendUrl }) => {
     fetchConversations();
 
     // Refresh every 5 seconds
-    const interval = setInterval(fetchConversations, 5000);
+    const interval = setInterval(fetchConversations, isPageVisible ? 5000 : 20000);
     return () => clearInterval(interval);
-  }, [adminId, token, backendUrl]);
+  }, [adminId, token, backendUrl, isPageVisible]);
 
   if (error) {
     return (
@@ -87,7 +101,11 @@ const AdminChat = ({ token, backendUrl }) => {
           <ChatPanel
             conversationId={selectedConversation.id}
             customerId={selectedConversation.buyer_id}
-            customerName={`Customer ${selectedConversation.buyer_id.substring(0, 8)}...`}
+            customerName={
+              selectedConversation.customer_name ||
+              `Customer ${selectedConversation.buyer_id.substring(0, 8)}...`
+            }
+            customerEmail={selectedConversation.customer_email || ""}
             currentUserId={selectedConversation.seller_id}
             token={token}
             backendUrl={backendUrl}

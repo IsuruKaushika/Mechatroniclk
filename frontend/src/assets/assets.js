@@ -79,6 +79,11 @@ import slide2 from './slide2.jpg'
 import slide3 from './slide3.jpg'
 import slide4 from './slide4.jpg'
 import cartIcon from './cartIcon.webp'
+import designProject1 from "./DesignProject1.webp";
+import designProject2 from "./DesignProject2.webp";
+import designProject3 from "./DesignProject3.webp";
+import designProject4 from "./DesignProject4.webp";
+
 export const assets = {
     logo,
     company,
@@ -103,7 +108,11 @@ export const assets = {
     slide2,
     slide3,
     slide4,
-    cartIcon
+    cartIcon,
+    designProject1,
+    designProject2,
+    designProject3,
+    designProject4
 }
 
 export const products = [

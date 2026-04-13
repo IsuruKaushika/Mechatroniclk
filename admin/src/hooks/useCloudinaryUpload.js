@@ -109,8 +109,10 @@ export const useCloudinaryUpload = (token) => {
           });
         });
 
-        // Send request to Cloudinary
-        const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${config.cloudName}/auto/upload`;
+        // Send request to Cloudinary. Use raw uploads for non-images (pdf/doc/etc).
+        const isImageFile = file.type.startsWith("image/");
+        const resourceType = isImageFile ? "image" : "raw";
+        const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${config.cloudName}/${resourceType}/upload`;
         console.log("Uploading to:", cloudinaryUrl);
         xhr.open("POST", cloudinaryUrl);
         xhr.send(formData);
@@ -121,7 +123,7 @@ export const useCloudinaryUpload = (token) => {
         return {
           url: result.secure_url,
           publicId: result.public_id,
-          mediaType: result.resource_type === "image" ? "image" : "file",
+          mediaType: isImageFile ? "image" : "file",
           fileName: file.name,
           fileSize: file.size,
           width: result.width,

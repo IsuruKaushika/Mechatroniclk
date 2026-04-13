@@ -52,7 +52,7 @@ const ConversationList = ({ conversations, selectedId, onSelect, loading }) => {
             {/* Customer Name */}
             <div className="flex items-start justify-between">
               <h3 className="font-medium text-gray-900">
-                Customer {conversation.customer_name || conversation.buyer_id.substring(0, 8)}...
+                {conversation.customer_name || conversation.buyer_id.substring(0, 8) + '...'}
               </h3>
               <span className="text-xs text-gray-400">
                 {formatTime(conversation.updated_at)}

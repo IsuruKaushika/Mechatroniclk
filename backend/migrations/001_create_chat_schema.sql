@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS typing_indicators (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
   user_id UUID NOT NULL,
-  expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '5 seconds'),
+  expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '2 seconds'),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -14,7 +14,7 @@ const faqs = [
   {
     question: "Will the realtime chat work now?",
     answer:
-      "The chat panel is already placed in the layout and can be connected to a realtime backend next.",
+      "Yes. Realtime chat is already integrated and active, with live message updates in the chat panel.",
   },
 ];
 

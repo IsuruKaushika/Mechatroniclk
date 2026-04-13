@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { supabase } from "../../utils/supabase";
 import { ShopContext } from "../../context/ShopContext";
 import ChatPanel from "./ChatPanel";
 
@@ -19,6 +18,20 @@ const ChatButton = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isSellerOnline, setIsSellerOnline] = useState(true); // Seller online status
+  const [isPageVisible, setIsPageVisible] = useState(
+    typeof document === "undefined" ? true : document.visibilityState === "visible",
+  );
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(document.visibilityState === "visible");
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   // Get current user from JWT token
   useEffect(() => {
@@ -78,23 +91,27 @@ const ChatButton = ({
     getConversation();
   }, [currentUserId, token, sellerId, serviceId, backendUrl]);
 
-  // Load and track unread messages for the conversation
+  // Load unread messages through backend (no direct browser reads from Supabase)
   useEffect(() => {
     if (!conversationId || !userIdUUID || isOpen) return;
 
     const loadUnreadMessages = async () => {
       try {
-        const { data, error } = await supabase
-          .from("messages")
-          .select("*")
-          .eq("conversation_id", conversationId)
-          .eq("is_read", false);
+        const response = await fetch(
+          `${backendUrl}/api/chat/conversations/${conversationId}/messages`,
+          {
+            headers: {
+              token,
+            },
+          },
+        );
 
-        if (error) throw error;
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.error || payload.message || "Failed to load unread messages");
+        }
 
-        // Count unread messages that are NOT from the current user
-        const unread = (data || []).filter((msg) => msg.sender_id !== userIdUUID).length;
-        setUnreadCount(unread);
+        setUnreadCount(typeof payload.unreadCount === "number" ? payload.unreadCount : 0);
       } catch (err) {
         console.error("Error loading unread messages:", err);
       }
@@ -102,38 +119,12 @@ const ChatButton = ({
 
     loadUnreadMessages();
 
-    // Subscribe to real-time message updates to track unread count
-    const messageChannel = `msg_${conversationId}`;
-    const messageSubscription = supabase
-      .channel(messageChannel, { config: { broadcast: { self: true } } })
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            // If new message is from admin (not from current user), increment unread count
-            if (payload.new.sender_id !== userIdUUID && !payload.new.is_read) {
-              setUnreadCount((prev) => prev + 1);
-            }
-          } else if (payload.eventType === "UPDATE") {
-            // If message was marked as read, decrement unread count
-            if (payload.new.is_read && !payload.old.is_read) {
-              setUnreadCount((prev) => Math.max(0, prev - 1));
-            }
-          }
-        },
-      )
-      .subscribe();
+    const interval = setInterval(loadUnreadMessages, isPageVisible ? 5000 : 20000);
 
     return () => {
-      messageSubscription.unsubscribe();
+      clearInterval(interval);
     };
-  }, [conversationId, userIdUUID, isOpen]);
+  }, [conversationId, userIdUUID, token, backendUrl, isOpen, isPageVisible]);
 
   const handleOpenChat = async () => {
     if (!token || !currentUserId) {

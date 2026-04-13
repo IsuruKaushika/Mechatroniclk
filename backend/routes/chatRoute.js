@@ -1,10 +1,107 @@
 import express from "express";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import { v2 as cloudinary } from "cloudinary";
 import { supabase } from "../config/supabase.js";
+import userModel from "../models/userModel.js";
 import { mongoIdToUUID } from "../utils/uuidConverter.js";
 
 const router = express.Router();
+
+const USER_CACHE_TTL_MS = 2 * 60 * 1000;
+const userDirectoryCache = {
+  loadedAt: 0,
+  byUuid: new Map(),
+};
+
+const getUserDirectoryByUuid = async () => {
+  const isCacheFresh = Date.now() - userDirectoryCache.loadedAt < USER_CACHE_TTL_MS;
+  if (isCacheFresh && userDirectoryCache.byUuid.size > 0) {
+    return userDirectoryCache.byUuid;
+  }
+
+  const users = await userModel.find({}, "_id name email").lean();
+  const byUuid = new Map(
+    users
+      .filter((user) => user?._id)
+      .map((user) => [
+        mongoIdToUUID(user._id.toString()),
+        { name: user.name || null, email: user.email || null },
+      ]),
+  );
+
+  userDirectoryCache.loadedAt = Date.now();
+  userDirectoryCache.byUuid = byUuid;
+  return byUuid;
+};
+
+const buildSignedAttachmentUrl = (message) => {
+  if (!message?.media_url || message.media_type === "image") {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(message.media_url);
+
+    if (!parsed.hostname.includes("res.cloudinary.com")) {
+      return null;
+    }
+
+    const pathParts = parsed.pathname.split("/").filter(Boolean);
+    if (pathParts.length < 6) {
+      return null;
+    }
+
+    // Expected path: /<cloud>/raw/upload/v<version>/<folder>/<public_id>.<ext>
+    const resourceType = pathParts[1];
+    const deliveryType = pathParts[2];
+    const versionIndex = pathParts.findIndex((part) => part.startsWith("v"));
+
+    if (versionIndex === -1 || versionIndex + 1 >= pathParts.length) {
+      return null;
+    }
+
+    const decodedAssetPath = pathParts
+      .slice(versionIndex + 1)
+      .map((segment) => decodeURIComponent(segment))
+      .join("/");
+
+    const fileName = (message.file_name || "").trim();
+    const nameDotIndex = fileName.lastIndexOf(".");
+    const filenameFormat =
+      nameDotIndex > -1 && nameDotIndex < fileName.length - 1
+        ? fileName.slice(nameDotIndex + 1).toLowerCase()
+        : null;
+
+    const pathDotIndex = decodedAssetPath.lastIndexOf(".");
+    const pathFormat =
+      pathDotIndex > -1 && pathDotIndex < decodedAssetPath.length - 1
+        ? decodedAssetPath.slice(pathDotIndex + 1).toLowerCase()
+        : null;
+
+    const format = filenameFormat || pathFormat;
+    if (!format) {
+      return null;
+    }
+
+    const publicId = pathFormat
+      ? decodedAssetPath.slice(0, decodedAssetPath.lastIndexOf("."))
+      : decodedAssetPath;
+
+    if (!publicId) {
+      return null;
+    }
+
+    return cloudinary.utils.private_download_url(publicId, format, {
+      resource_type: resourceType,
+      type: deliveryType,
+      attachment: true,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+    });
+  } catch {
+    return null;
+  }
+};
 
 // Middleware to verify user is authenticated using JWT (same as rest of app)
 const authMiddleware = async (req, res, next) => {
@@ -103,10 +200,110 @@ router.post("/messages", authMiddleware, async (req, res) => {
       return res.status(500).json({ error: "Failed to send message", details: msgError.message });
     }
 
-    res.json({ success: true, message });
+    const enrichedMessage = {
+      ...message,
+      download_url: buildSignedAttachmentUrl(message),
+    };
+
+    res.json({ success: true, message: enrichedMessage });
   } catch (error) {
     console.error("❌ Error sending message:", error);
     res.status(500).json({ error: "Failed to send message", details: error.message });
+  }
+});
+
+/**
+ * GET /api/chat/conversations/:conversationId/messages
+ * Proxy chat history and typing indicators through the backend.
+ */
+router.get("/conversations/:conversationId/messages", authMiddleware, async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { since } = req.query;
+
+    if (!conversationId) {
+      return res.status(400).json({ error: "Conversation ID required" });
+    }
+
+    const userId = mongoIdToUUID(req.userId);
+
+    const { data: conversation, error: conversationError } = await supabase
+      .from("conversations")
+      .select("id, buyer_id, seller_id, service_name, created_at, updated_at, last_message_at")
+      .eq("id", conversationId)
+      .single();
+
+    if (conversationError || !conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
+
+    if (conversation.buyer_id !== userId && conversation.seller_id !== userId) {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+
+    const parsedSince =
+      typeof since === "string" && !Number.isNaN(Date.parse(since)) ? new Date(since) : null;
+
+    let messagesQuery = supabase
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true });
+
+    if (parsedSince) {
+      messagesQuery = messagesQuery.or(
+        `created_at.gt.${parsedSince.toISOString()},updated_at.gt.${parsedSince.toISOString()}`,
+      );
+    }
+
+    const [
+      { data: messages, error: messagesError },
+      { data: typingIndicators, error: typingError },
+      { count: unreadCount, error: unreadError },
+    ] = await Promise.all([
+      messagesQuery,
+      supabase
+        .from("typing_indicators")
+        .select("user_id")
+        .eq("conversation_id", conversationId)
+        .gt("expires_at", new Date().toISOString()),
+      supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("conversation_id", conversationId)
+        .eq("is_read", false)
+        .neq("sender_id", userId),
+    ]);
+
+    if (messagesError) {
+      throw messagesError;
+    }
+
+    if (typingError) {
+      throw typingError;
+    }
+
+    if (unreadError) {
+      throw unreadError;
+    }
+
+    const typingUsers = [
+      ...new Set((typingIndicators || []).map((item) => item.user_id).filter(Boolean)),
+    ];
+    const enrichedMessages = (messages || []).map((message) => ({
+      ...message,
+      download_url: buildSignedAttachmentUrl(message),
+    }));
+
+    res.json({
+      conversation,
+      messages: enrichedMessages,
+      typingUsers,
+      unreadCount: unreadCount || 0,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching conversation messages:", error);
+    res.status(500).json({ error: "Failed to fetch conversation messages" });
   }
 });
 
@@ -140,7 +337,21 @@ router.get("/conversations/:userId", authMiddleware, async (req, res) => {
       throw error;
     }
 
-    res.json(conversations);
+    const usersByUuid = await getUserDirectoryByUuid();
+
+    const enrichedConversations = (conversations || []).map((conversation) => {
+      const customerUUID =
+        conversation.buyer_id === userUUID ? conversation.seller_id : conversation.buyer_id;
+      const customer = usersByUuid.get(customerUUID);
+
+      return {
+        ...conversation,
+        customer_name: customer?.name || conversation.customer_name || null,
+        customer_email: customer?.email || conversation.customer_email || null,
+      };
+    });
+
+    res.json(enrichedConversations);
   } catch (error) {
     console.error("❌ Error fetching conversations:", error);
     res.status(500).json({ error: "Failed to fetch conversations" });
@@ -245,6 +456,53 @@ router.put("/messages/:messageId/read", authMiddleware, async (req, res) => {
 });
 
 /**
+ * PUT /api/chat/conversations/:conversationId/read
+ * Mark all unread messages as read for the current user in one request
+ */
+router.put("/conversations/:conversationId/read", authMiddleware, async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+
+    if (!conversationId) {
+      return res.status(400).json({ error: "Conversation ID required" });
+    }
+
+    const userId = mongoIdToUUID(req.userId);
+
+    const { data: conversation, error: conversationError } = await supabase
+      .from("conversations")
+      .select("buyer_id, seller_id")
+      .eq("id", conversationId)
+      .single();
+
+    if (conversationError || !conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
+
+    if (conversation.buyer_id !== userId && conversation.seller_id !== userId) {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+
+    const { data: updatedRows, error: updateError } = await supabase
+      .from("messages")
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq("conversation_id", conversationId)
+      .neq("sender_id", userId)
+      .eq("is_read", false)
+      .select("id");
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    res.json({ success: true, updatedCount: (updatedRows || []).length });
+  } catch (error) {
+    console.error("Error marking conversation as read:", error);
+    res.status(500).json({ error: "Failed to mark conversation as read" });
+  }
+});
+
+/**
  * POST /api/chat/typing
  * Set typing indicator for a conversation
  */
@@ -274,11 +532,11 @@ router.post("/typing", authMiddleware, async (req, res) => {
       return res.status(403).json({ error: "Not authorized" });
     }
 
-    // Upsert typing indicator (expires in 5 seconds)
+    // Upsert typing indicator (expires in 1 second)
     const { error } = await supabase.from("typing_indicators").insert({
       conversation_id,
       user_id: userId,
-      expires_at: new Date(Date.now() + 5000).toISOString(),
+      expires_at: new Date(Date.now() + 1000).toISOString(),
     });
 
     // Ignore duplicate key errors (user is re-typing)

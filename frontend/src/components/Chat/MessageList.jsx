@@ -1,7 +1,7 @@
 import React, { forwardRef } from "react";
 import MessageBubble from "./MessageBubble";
 
-const MessageList = forwardRef(({ messages, isLoading, currentUserId }, ref) => {
+const MessageList = forwardRef(({ messages, isLoading, currentUserId, onScroll }, ref) => {
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center bg-slate-50">
@@ -29,6 +29,7 @@ const MessageList = forwardRef(({ messages, isLoading, currentUserId }, ref) => 
       ref={ref}
       className="flex-1 overflow-y-auto bg-gradient-to-b from-white to-slate-50 px-4 py-4 sm:px-6"
       style={{ scrollBehavior: "smooth" }}
+      onScroll={onScroll}
     >
       <div className="flex flex-col gap-3">
         {messages.map((message, index) => {

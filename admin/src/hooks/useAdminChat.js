@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { supabase } from "../utils/supabase";
 
 /**
  * Custom hook for admin chat functionality
@@ -18,188 +17,143 @@ export const useAdminChat = (conversationId, adminId, token, backendUrl) => {
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isPageVisible, setIsPageVisible] = useState(
+    typeof document === "undefined" ? true : document.visibilityState === "visible",
+  );
   const typingTimeoutRef = useRef(null);
+  const lastSyncRef = useRef(null);
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(document.visibilityState === "visible");
+    };
 
-  // Load initial message history
-  const loadMessages = useCallback(async () => {
-    if (!conversationId || !adminId) {
-      return;
-    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
-    try {
-      setIsLoading(true);
-      setError(null);
+  const mergeMessages = useCallback((existing, incoming) => {
+    const byId = new Map((existing || []).map((message) => [message.id, message]));
 
-      const { data, error: err } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true });
-
-      if (err) {
-        throw err;
+    for (const message of incoming || []) {
+      if (message?.id) {
+        byId.set(message.id, message);
       }
-
-      setMessages(data || []);
-
-      const unread = (data || []).filter((msg) => !msg.is_read && msg.sender_id !== adminId).length;
-      setUnreadCount(unread);
-    } catch (err) {
-      console.error("Error loading messages:", err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
     }
-  }, [conversationId, adminId]);
 
-  // Subscribe to real-time message updates
+    return Array.from(byId.values()).sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
+  }, []);
+
+  const updateLastSync = useCallback((incomingMessages) => {
+    if (!incomingMessages || incomingMessages.length === 0) return;
+
+    const latest = incomingMessages.reduce((latestSoFar, message) => {
+      const value = message.updated_at || message.created_at;
+      if (!value) return latestSoFar;
+      if (!latestSoFar) return value;
+      return new Date(value).getTime() > new Date(latestSoFar).getTime() ? value : latestSoFar;
+    }, null);
+
+    if (latest) {
+      lastSyncRef.current = latest;
+    }
+  }, []);
+
   useEffect(() => {
     if (!conversationId || !adminId) return;
+    lastSyncRef.current = null;
+    setMessages([]);
+  }, [conversationId, adminId]);
+
+  // Load initial message history
+  const loadMessages = useCallback(
+    async (options = {}) => {
+      const { silent = false } = options;
+
+      if (!conversationId || !adminId || !token) {
+        return;
+      }
+
+      try {
+        if (!silent) {
+          setIsLoading(true);
+        }
+        setError(null);
+
+        const url = new URL(`${backendUrl}/api/chat/conversations/${conversationId}/messages`);
+        if (silent && lastSyncRef.current) {
+          url.searchParams.set("since", lastSyncRef.current);
+        }
+
+        const response = await fetch(url.toString(), {
+          headers: {
+            token,
+          },
+        });
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(payload.error || payload.message || "Failed to load messages");
+        }
+
+        setMessages((previousMessages) =>
+          silent ? mergeMessages(previousMessages, payload.messages || []) : payload.messages || [],
+        );
+
+        updateLastSync(payload.messages || []);
+        setTypingUsers(payload.typingUsers || []);
+        setUnreadCount(
+          typeof payload.unreadCount === "number"
+            ? payload.unreadCount
+            : (payload.messages || []).filter((msg) => !msg.is_read && msg.sender_id !== adminId)
+                .length,
+        );
+      } catch (err) {
+        console.error("Error loading messages:", err);
+        setError(err.message);
+      } finally {
+        if (!silent) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [conversationId, adminId, token, backendUrl, mergeMessages, updateLastSync],
+  );
+
+  // Poll message history through the backend so the browser never reads Supabase directly
+  useEffect(() => {
+    if (!conversationId || !adminId || !token) return;
 
     // Load messages immediately
     loadMessages();
 
-    // Create a unique channel name for this conversation
-    const messageChannel = `msg_${conversationId}`;
-    const typingChannel = `typ_${conversationId}`;
-
-    let messageSubscription;
-    let typingSubscription;
-    let pollInterval;
-
-    // Set up subscriptions with proper error handling
-    try {
-      // Subscribe to new messages - ensure all .on() calls before .subscribe()
-      messageSubscription = supabase
-        .channel(messageChannel, { config: { broadcast: { self: true } } })
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "messages",
-            filter: `conversation_id=eq.${conversationId}`,
-          },
-          (payload) => {
-            console.log("� Admin real-time event:", payload.eventType, {
-              messageId: payload.new?.id || payload.old?.id,
-              sender: payload.new?.sender_id || payload.old?.sender_id,
-              content: payload.new?.content?.substring(0, 30) || "...",
-            });
-
-            if (payload.eventType === "INSERT") {
-              setMessages((prev) => {
-                // Check if message already exists to avoid duplicates
-                if (prev.find((msg) => msg.id === payload.new.id)) {
-                  return prev;
-                }
-                return [...prev, payload.new];
-              });
-
-              // Update unread count if message is from customer
-              if (payload.new.sender_id !== adminId) {
-                setUnreadCount((prev) => prev + 1);
-              }
-            } else if (payload.eventType === "UPDATE") {
-              setMessages((prev) =>
-                prev.map((msg) => (msg.id === payload.new.id ? payload.new : msg)),
-              );
-            } else if (payload.eventType === "DELETE") {
-              setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
-            }
-          },
-        )
-        .subscribe();
-
-      // Subscribe to typing indicators - separate channel
-      typingSubscription = supabase
-        .channel(typingChannel, { config: { broadcast: { self: true } } })
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "typing_indicators",
-            filter: `conversation_id=eq.${conversationId}`,
-          },
-          (payload) => {
-            if (payload.eventType === "INSERT") {
-              setTypingUsers((prev) => [
-                ...prev.filter((u) => u !== payload.new.user_id),
-                payload.new.user_id,
-              ]);
-            } else if (payload.eventType === "DELETE") {
-              setTypingUsers((prev) => prev.filter((u) => u !== payload.old.user_id));
-            }
-          },
-        )
-        .subscribe();
-
-      // Fallback polling mechanism - check for new messages every 300ms (faster)
-      // Critical for catching customer messages when real-time subscription fails
-      pollInterval = setInterval(async () => {
-        try {
-          const { data, error } = await supabase
-            .from("messages")
-            .select("*")
-            .eq("conversation_id", conversationId)
-            .order("created_at", { ascending: true });
-
-          if (error) {
-            throw error;
-          }
-
-          setMessages((prev) => {
-            if (!data) {
-              return prev;
-            }
-
-            if (data.length === 0) {
-              return prev;
-            }
-
-            // Check if count changed
-            if (data.length !== prev.length) {
-              return data;
-            }
-
-            // Also check by comparing all IDs to catch modifications/deletes
-            const prevIds = prev.map((m) => m.id);
-            const newIds = data.map((m) => m.id);
-
-            if (JSON.stringify(prevIds) !== JSON.stringify(newIds)) {
-              return data;
-            }
-
-            // No changes detected
-            return prev;
-          });
-        } catch (err) {
-          // Polling error - silently continue
-        }
-      }, 300);
-    } catch (err) {
-      console.error("Error setting up subscriptions:", err);
-    }
+    const pollInterval = setInterval(
+      () => {
+        loadMessages({ silent: true });
+      },
+      isPageVisible ? 2000 : 10000,
+    );
 
     return () => {
-      if (messageSubscription) {
-        messageSubscription.unsubscribe();
-      }
-      if (typingSubscription) {
-        typingSubscription.unsubscribe();
-      }
-      if (pollInterval) {
-        clearInterval(pollInterval);
+      clearInterval(pollInterval);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [conversationId, adminId]);
+  }, [conversationId, adminId, token, loadMessages, isPageVisible]);
 
   // Send a message via backend API
   const sendMessage = useCallback(
     async (content, mediaUrl = null, mediaType = null, fileName = null, fileSize = null) => {
-      if (!conversationId || !content.trim()) {
-        setError("Message content is required");
+      const hasText = Boolean(content?.trim());
+      const hasAttachment = Boolean(mediaUrl);
+
+      if (!conversationId || (!hasText && !hasAttachment)) {
+        setError("Message content or attachment is required");
         return null;
       }
 
@@ -257,26 +211,26 @@ export const useAdminChat = (conversationId, adminId, token, backendUrl) => {
 
   // Mark all messages as read
   const markAllAsRead = useCallback(async () => {
-    const unreadMessages = messages.filter((msg) => !msg.is_read && msg.sender_id !== adminId);
-
-    if (unreadMessages.length === 0) return;
+    if (!conversationId || !token) return;
 
     try {
-      await Promise.all(
-        unreadMessages.map((msg) =>
-          fetch(`${backendUrl}/api/chat/messages/${msg.id}/read`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              token: token,
-            },
-          }),
-        ),
-      );
+      const response = await fetch(`${backendUrl}/api/chat/conversations/${conversationId}/read`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          token: token,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to mark conversation as read: ${response.statusText}`);
+      }
+
+      await loadMessages({ silent: true });
     } catch (err) {
       console.error("Error marking messages as read:", err);
     }
-  }, [messages, adminId, token, backendUrl]);
+  }, [conversationId, token, backendUrl, loadMessages]);
 
   // Set typing indicator
   const setTypingIndicator = useCallback(async () => {
@@ -296,14 +250,14 @@ export const useAdminChat = (conversationId, adminId, token, backendUrl) => {
         }),
       });
 
-      // Clear typing status after 3 seconds
+      // Clear typing status after 2 seconds
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
 
       typingTimeoutRef.current = setTimeout(() => {
         setIsTyping(false);
-      }, 3000);
+      }, 1000);
     } catch (err) {
       console.error("Error setting typing indicator:", err);
     }
