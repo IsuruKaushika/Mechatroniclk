@@ -1,4 +1,5 @@
 import React from "react";
+import { assets } from "../../assets/assets";
 
 const formatTime = (timestamp) => {
   const date = new Date(timestamp);
@@ -76,11 +77,7 @@ const MessageBubble = ({ message, isOwn, showAvatar }) => {
           }`}
           aria-hidden={!showAvatar}
         >
-          <img
-            src={`../src/assets/logo.png`}
-            alt="Avatar"
-            className="h-full w-full rounded-full object-cover"
-          />
+          <img src={assets.logo} alt="Avatar" className="h-full w-full rounded-full object-cover" />
         </div>
       )}
 

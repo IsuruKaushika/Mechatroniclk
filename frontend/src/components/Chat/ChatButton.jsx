@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ShopContext } from "../../context/ShopContext";
 import ChatPanel from "./ChatPanel";
+import { assets } from "../../assets/assets";
 
 const ChatButton = ({
   sellerId = "c4b18e3a-7715-5f27-a48f-d381a9a8e517", // Admin UUID (converted from admin email)
@@ -175,7 +176,7 @@ const ChatButton = ({
             {/* Avatar */}
             <div className="relative">
               <img
-                src={`../src/assets/logo.png`}
+                src={assets.logo}
                 alt={sellerName}
                 className="h-10 w-10 rounded-full object-cover"
               />
