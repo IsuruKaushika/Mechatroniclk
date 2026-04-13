@@ -42,11 +42,29 @@ const isPreviewableImage = (message) => {
   return false;
 };
 
+const getSafeHttpUrl = (urlValue) => {
+  if (!urlValue || typeof urlValue !== "string") {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(urlValue);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+};
+
 const MessageBubble = ({ message, isOwn, showAvatar }) => {
-  const isImage = isPreviewableImage(message) && message.media_url;
-  const hasAttachment = Boolean(message.media_url);
+  const safeMediaUrl = getSafeHttpUrl(message.media_url);
+  const safeDownloadUrl = getSafeHttpUrl(message.download_url);
+  const isImage = isPreviewableImage(message) && safeMediaUrl;
+  const hasAttachment = Boolean(safeMediaUrl || safeDownloadUrl);
   const attachmentLabel = message.file_name || "Download file";
-  const attachmentUrl = message.media_url || message.download_url;
+  const attachmentUrl = safeMediaUrl || safeDownloadUrl;
 
   return (
     <div className={`flex items-end gap-2 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
@@ -74,16 +92,12 @@ const MessageBubble = ({ message, isOwn, showAvatar }) => {
           {/* Image Content */}
           {isImage && (
             <div className="mt-2">
-              <img
-                src={message.media_url}
-                alt="Shared media"
-                className="max-h-48 max-w-xs rounded-md"
-              />
+              <img src={safeMediaUrl} alt="Shared media" className="max-h-48 max-w-xs rounded-md" />
             </div>
           )}
 
           {/* File Content */}
-          {hasAttachment && !isImage && (
+          {hasAttachment && !isImage && attachmentUrl && (
             <a
               href={attachmentUrl}
               target="_blank"

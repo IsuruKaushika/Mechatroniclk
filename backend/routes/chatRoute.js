@@ -8,6 +8,88 @@ import { mongoIdToUUID } from "../utils/uuidConverter.js";
 
 const router = express.Router();
 
+const ALLOWED_MEDIA_HOSTS = new Set(["res.cloudinary.com"]);
+const rateLimitState = new Map();
+
+const createSlidingWindowRateLimiter = ({ keyPrefix, windowMs, maxRequests }) => {
+  return (req, res, next) => {
+    const actorId = req.userId || req.ip || "unknown";
+    const bucketKey = `${keyPrefix}:${actorId}`;
+    const now = Date.now();
+    const windowStart = now - windowMs;
+
+    const existing = rateLimitState.get(bucketKey) || [];
+    const recentRequests = existing.filter((timestamp) => timestamp > windowStart);
+
+    if (recentRequests.length >= maxRequests) {
+      const retryAfterSeconds = Math.ceil((recentRequests[0] + windowMs - now) / 1000);
+      return res.status(429).json({
+        error: "Too many requests. Please try again later.",
+        retryAfter: Math.max(retryAfterSeconds, 1),
+      });
+    }
+
+    recentRequests.push(now);
+    rateLimitState.set(bucketKey, recentRequests);
+    next();
+  };
+};
+
+const normalizeAndValidateMediaUrl = (mediaUrl) => {
+  if (!mediaUrl) {
+    return null;
+  }
+
+  if (typeof mediaUrl !== "string") {
+    return null;
+  }
+
+  const trimmed = mediaUrl.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+
+    if (parsed.protocol !== "https:") {
+      return null;
+    }
+
+    if (!ALLOWED_MEDIA_HOSTS.has(parsed.hostname.toLowerCase())) {
+      return null;
+    }
+
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+};
+
+const uploadTokenRateLimit = createSlidingWindowRateLimiter({
+  keyPrefix: "chat-upload-token",
+  windowMs: 60 * 1000,
+  maxRequests: 20,
+});
+
+const conversationRateLimit = createSlidingWindowRateLimiter({
+  keyPrefix: "chat-conversation-create",
+  windowMs: 60 * 1000,
+  maxRequests: 15,
+});
+
+const messageRateLimit = createSlidingWindowRateLimiter({
+  keyPrefix: "chat-message-send",
+  windowMs: 60 * 1000,
+  maxRequests: 40,
+});
+
+const typingRateLimit = createSlidingWindowRateLimiter({
+  keyPrefix: "chat-typing",
+  windowMs: 10 * 1000,
+  maxRequests: 30,
+});
+
 const USER_CACHE_TTL_MS = 2 * 60 * 1000;
 const userDirectoryCache = {
   loadedAt: 0,
@@ -124,7 +206,7 @@ const authMiddleware = async (req, res, next) => {
  * Generate upload configuration for Cloudinary
  * Returns cloudName and uploadPreset for unsigned uploads
  */
-router.post("/upload-token", authMiddleware, async (req, res) => {
+router.post("/upload-token", authMiddleware, uploadTokenRateLimit, async (req, res) => {
   try {
     const cloudinaryCloudName = process.env.CLOUDINARY_CHAT_NAME;
     const cloudinaryUploadPreset =
@@ -150,13 +232,27 @@ router.post("/upload-token", authMiddleware, async (req, res) => {
  * POST /api/chat/messages
  * Send a chat message
  */
-router.post("/messages", authMiddleware, async (req, res) => {
+router.post("/messages", authMiddleware, messageRateLimit, async (req, res) => {
   try {
     const { conversation_id, content, media_url, media_type, file_name, file_size } = req.body;
 
-    if (!conversation_id || (!content && !media_url)) {
+    const normalizedContent = typeof content === "string" ? content.trim() : "";
+    const normalizedMediaUrl = normalizeAndValidateMediaUrl(media_url);
+    const normalizedMediaType = media_type === "image" || media_type === "file" ? media_type : null;
+    const normalizedFileName =
+      typeof file_name === "string" && file_name.trim() ? file_name.trim().slice(0, 255) : null;
+    const normalizedFileSize =
+      typeof file_size === "number" && Number.isFinite(file_size) && file_size > 0
+        ? Math.floor(file_size)
+        : null;
+
+    if (!conversation_id || (!normalizedContent && !normalizedMediaUrl)) {
       console.error("  ❌ Missing required fields");
       return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    if (media_url && !normalizedMediaUrl) {
+      return res.status(400).json({ error: "Invalid media URL" });
     }
 
     // Convert to UUID regardless of format (email or ObjectID)
@@ -186,11 +282,11 @@ router.post("/messages", authMiddleware, async (req, res) => {
       .insert({
         conversation_id,
         sender_id: senderId,
-        content,
-        media_url: media_url || null,
-        media_type: media_type || null,
-        file_name: file_name || null,
-        file_size: file_size || null,
+        content: normalizedContent || null,
+        media_url: normalizedMediaUrl,
+        media_type: normalizedMediaType,
+        file_name: normalizedFileName,
+        file_size: normalizedFileSize,
       })
       .select()
       .single();
@@ -362,7 +458,7 @@ router.get("/conversations/:userId", authMiddleware, async (req, res) => {
  * POST /api/chat/conversations
  * Create a new conversation with a seller
  */
-router.post("/conversations", authMiddleware, async (req, res) => {
+router.post("/conversations", authMiddleware, conversationRateLimit, async (req, res) => {
   try {
     const { sellerId, serviceId, serviceName } = req.body;
 
@@ -506,7 +602,7 @@ router.put("/conversations/:conversationId/read", authMiddleware, async (req, re
  * POST /api/chat/typing
  * Set typing indicator for a conversation
  */
-router.post("/typing", authMiddleware, async (req, res) => {
+router.post("/typing", authMiddleware, typingRateLimit, async (req, res) => {
   try {
     const { conversation_id } = req.body;
 
