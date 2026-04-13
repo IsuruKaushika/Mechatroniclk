@@ -25,7 +25,7 @@ a.active hr{
     display: none;
   }
   
-{/*hidden product page web browser*/}
+/* hidden product page web browser */
 @media(max-width:640px) {
  a.active{
   background-color: black;

@@ -292,7 +292,7 @@ const Home = ({ token }) => {
                       chartPadding +
                       (index / (yAxisValues.length - 1)) * (chartHeight - chartPadding * 2);
                     return (
-                      <g key={value + index}>
+                      <g key={`y-axis-${value}-${index}`}>
                         <line
                           x1={chartPadding}
                           y1={y}
@@ -385,7 +385,7 @@ const Home = ({ token }) => {
             ) : (
               <div className="space-y-3">
                 {overview.trendingProducts.map((product, index) => (
-                  <div key={product.key} className="flex items-center gap-3">
+                  <div key={product.key || `product-${index}`} className="flex items-center gap-3">
                     <p className="w-5 text-xs text-gray-500">{index + 1}</p>
                     {product.image ? (
                       <img

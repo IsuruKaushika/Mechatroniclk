@@ -6,24 +6,31 @@ import { backendUrl, currency } from "../App";
 const Customers = ({ token }) => {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
+  const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterMode, setFilterMode] = useState("all");
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchCustomerData = async () => {
       if (!token) return;
 
       try {
         setLoading(true);
-        const response = await axios.post(
-          `${backendUrl}/api/order/list`,
-          {},
-          { headers: { token } },
-        );
+        const [ordersResponse, usersResponse] = await Promise.all([
+          axios.post(`${backendUrl}/api/order/list`, {}, { headers: { token } }),
+          axios.get(`${backendUrl}/api/user/list`, { headers: { token } }),
+        ]);
 
-        if (response.data.success) {
-          setOrders(response.data.orders || []);
+        if (ordersResponse.data.success) {
+          setOrders(ordersResponse.data.orders || []);
         } else {
-          toast.error(response.data.message || "Failed to load customer data");
+          toast.error(ordersResponse.data.message || "Failed to load order data");
+        }
+
+        if (usersResponse.data.success) {
+          setUsers(usersResponse.data.users || []);
+        } else {
+          toast.error(usersResponse.data.message || "Failed to load customer data");
         }
       } catch (error) {
         toast.error(error.message || "Failed to load customer data");
@@ -32,11 +39,31 @@ const Customers = ({ token }) => {
       }
     };
 
-    fetchOrders();
+    fetchCustomerData();
   }, [token]);
 
   const customers = useMemo(() => {
     const customerMap = new Map();
+
+    users.forEach((user) => {
+      const email = (user.email || "").trim().toLowerCase();
+      const name = (user.name || "").trim() || "Unknown Customer";
+      const key = user._id || email || name;
+
+      if (!key) return;
+
+      customerMap.set(key, {
+        id: key,
+        name,
+        email: user.email || "-",
+        phone: "-",
+        orderCount: 0,
+        totalSpent: 0,
+        deliveredOrders: 0,
+        lastOrderDate: 0,
+        hasOrdered: false,
+      });
+    });
 
     orders.forEach((order) => {
       const email = (order.address?.email || "").trim().toLowerCase();
@@ -59,10 +86,19 @@ const Customers = ({ token }) => {
         totalSpent: 0,
         deliveredOrders: 0,
         lastOrderDate: 0,
+        hasOrdered: false,
       };
 
+      existing.name = existing.name === "Unknown Customer" ? fullName : existing.name;
+      if ((!existing.email || existing.email === "-") && order.address?.email) {
+        existing.email = order.address.email;
+      }
+      if ((!existing.phone || existing.phone === "-") && order.address?.phone) {
+        existing.phone = order.address.phone;
+      }
       existing.orderCount += 1;
       existing.totalSpent += Number(order.amount || 0);
+      existing.hasOrdered = true;
       if (order.status === "Delivered") {
         existing.deliveredOrders += 1;
       }
@@ -71,22 +107,34 @@ const Customers = ({ token }) => {
       customerMap.set(key, existing);
     });
 
-    return [...customerMap.values()].sort((a, b) => b.lastOrderDate - a.lastOrderDate);
-  }, [orders]);
+    return [...customerMap.values()].sort((a, b) => {
+      if (b.lastOrderDate !== a.lastOrderDate) {
+        return b.lastOrderDate - a.lastOrderDate;
+      }
+
+      return a.name.localeCompare(b.name);
+    });
+  }, [orders, users]);
 
   const filteredCustomers = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
-    if (!query) return customers;
+    const baseCustomers =
+      filterMode === "ordered"
+        ? customers.filter((customer) => customer.hasOrdered)
+        : customers;
 
-    return customers.filter(
+    if (!query) return baseCustomers;
+
+    return baseCustomers.filter(
       (customer) =>
         customer.name.toLowerCase().includes(query) ||
         String(customer.email).toLowerCase().includes(query) ||
         String(customer.phone).toLowerCase().includes(query),
     );
-  }, [customers, searchTerm]);
+  }, [customers, filterMode, searchTerm]);
 
   const totalRevenue = customers.reduce((sum, customer) => sum + customer.totalSpent, 0);
+  const orderedCustomersCount = customers.filter((customer) => customer.hasOrdered).length;
 
   if (loading) {
     return <div className="py-6 text-gray-600">Loading customer data...</div>;
@@ -99,18 +147,29 @@ const Customers = ({ token }) => {
           <h1 className="text-2xl font-semibold text-gray-800">Customers</h1>
         </div>
         <div className="text-sm text-gray-600">
-          {customers.length} customers | {currency}
+          {customers.length} customers | {orderedCustomersCount} ordered | {currency}
           {Math.round(totalRevenue).toLocaleString()} total order value
         </div>
       </div>
 
-      <input
-        type="text"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        placeholder="Search by name, email or phone"
-        className="w-full max-w-md px-3 py-2 border border-gray-300 rounded"
-      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search by name, email or phone"
+          className="w-full max-w-md px-3 py-2 border border-gray-300 rounded"
+        />
+
+        <select
+          value={filterMode}
+          onChange={(e) => setFilterMode(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded bg-white text-gray-700"
+        >
+          <option value="all">All Customers</option>
+          <option value="ordered">Ordered Customers</option>
+        </select>
+      </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
         <table className="min-w-full text-sm">

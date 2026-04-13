@@ -14,6 +14,7 @@ import Edit from "./pages/Edit";
 import View from "./pages/View";
 import Home from "./pages/Home";
 import Customers from "./pages/Customers";
+import AdminChat from "./pages/AdminChat";
 
 import Login from "./components/Login";
 import { useState } from "react";
@@ -52,6 +53,7 @@ const App = () => {
                 <Route path="/DeliveredOrders" element={<DeliveredOrders token={token} />} />
                 <Route path="/CancelledOrders" element={<CancelledOrders token={token} />} />
                 <Route path="/customers" element={<Customers token={token} />} />
+                <Route path="/chat" element={<AdminChat token={token} backendUrl={backendUrl} />} />
                 <Route path="/edit/:id" element={<Edit token={token} />} />
                 <Route path="/view/:id" element={<View token={token} />} />
                 <Route path="/" element={<Home token={token} />} />
