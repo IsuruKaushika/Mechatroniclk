@@ -66,6 +66,13 @@ const ServiceReviews = ({ reviewSummary, ratingBreakdown, reviewCards }) => {
                       <p className="text-base font-semibold text-slate-900">{review.name}</p>
                       <p className="mt-0.5 text-xs text-slate-500">{review.country}</p>
                     </div>
+                    <div className="ml-auto">
+                      <img
+                        src={review.image}
+                        alt={`${review.name}'s project`}
+                        className="h-12 w-12 object-cover"
+                      />
+                    </div>
                   </div>
 
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">

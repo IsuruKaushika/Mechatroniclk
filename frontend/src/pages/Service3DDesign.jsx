@@ -187,7 +187,14 @@ const Service3DDesign = () => {
           <div className="mt-8">
             <ServiceAbout />
           </div>
-
+          {/* Right Side: Sticky Packages desktop*/}
+          <div className="lg:hidden">
+            <PackageSelector
+              packages={packages}
+              selectedPackage={selectedPackage}
+              onSelectPackage={setSelectedPackage}
+            />
+          </div>
           {/* Previous Works (Desktop Only) */}
           <PreviousWorks portfolioItems={portfolioItems} />
 
@@ -210,12 +217,14 @@ const Service3DDesign = () => {
           </section>
         </div>
 
-        {/* Right Side: Sticky Packages */}
-        <PackageSelector
-          packages={packages}
-          selectedPackage={selectedPackage}
-          onSelectPackage={setSelectedPackage}
-        />
+        {/* Right Side: Sticky Packages desktop*/}
+        <div className="hidden lg:block">
+          <PackageSelector
+            packages={packages}
+            selectedPackage={selectedPackage}
+            onSelectPackage={setSelectedPackage}
+          />
+        </div>
       </section>
     </div>
   );

@@ -27,7 +27,8 @@ const Navbar = () => {
       <div className="relative flex items-center justify-between w-full mx-auto">
       {/* Logo */}
       <Link to="/">
-        <img src={assets.logo} className="w-14" alt="Logo" />
+        <img src={assets.logo} className="w-14 mx-auto" alt="Logo" />
+        <p className='text-[10px] font-[Orbitron] font-semibold'>MechatronicLK</p>
       </Link>
 
       {/* Main Menu (Desktop) */}
