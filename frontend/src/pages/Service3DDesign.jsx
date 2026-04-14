@@ -168,7 +168,7 @@ const Service3DDesign = () => {
   const [selectedPackage, setSelectedPackage] = useState("standard");
 
   return (
-    <div className="pb-24 text-slate-800 lg:pb-16">
+    <div className=" text-slate-800 lg:pb-16">
       {/* Chat Button - Only visible on this service page */}
       <ChatButton
         sellerId="c4b18e3a-7715-5f27-a48f-d381a9a8e517"
@@ -180,7 +180,13 @@ const Service3DDesign = () => {
         <div>
           {/* Service Headline */}
           <div className="text-3xl w-fit mb-8 pt-10 uppercase">
-            <Title text1={"Professional 3D Modeling "} text2={"& Product Designing"} />
+            <div className="inline-flex gap-2 items-center mb-3;">
+              <p className="text-gray-500">
+                Professional 3D Modeling
+                <span className="text-gray-700 font-medium"> &<br className="md:hidden" /> Product Designing</span>
+              </p>
+              <p className="w-8 sm:w-12 h-[1px] sm:h-[2px] bg-gray-700 hidden 2xl:block"></p>
+            </div>
           </div>
           <ProjectCarousel projects={heroProjects} />
           {/* About This Service */}
@@ -188,7 +194,7 @@ const Service3DDesign = () => {
             <ServiceAbout />
           </div>
           {/* Right Side: Sticky Packages desktop*/}
-          <div className="lg:hidden">
+          <div className="lg:hidden mt-8 lg:mt-0">
             <PackageSelector
               packages={packages}
               selectedPackage={selectedPackage}
@@ -211,7 +217,7 @@ const Service3DDesign = () => {
           </div>
 
           {/* FAQ + Custom Offer */}
-          <section className="grid gap-6 py-14 lg:grid-cols-[1fr_1fr]">
+          <section className="grid gap-8 py-8 lg:grid-cols-[1fr_1fr]">
             <ServiceFAQ />
             <ServiceCustomOffer />
           </section>

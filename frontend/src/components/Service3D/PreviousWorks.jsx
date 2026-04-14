@@ -6,7 +6,7 @@ const PreviousWorks = ({ portfolioItems }) => {
     <section className="hidden lg:block py-14" id="previous-work">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-semibold text-slate-900">Previous Works</h2>
+          <h2 className="text-2xl font-semibold text-slate-900">Previous Works</h2>
           <p className="mt-2 text-sm text-slate-600">
             A few recent projects from product concept to delivery-ready visuals.
           </p>

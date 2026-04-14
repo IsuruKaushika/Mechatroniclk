@@ -14,8 +14,8 @@ const renderCell = (value) => {
 
 const ComparePackages = ({ comparisonRows }) => {
   return (
-    <section id="compare-packages" className="py-6 md:py-10">
-      <h2 className="text-xl md:text-2xl font-semibold text-slate-900">Compare packages</h2>
+    <section id="compare-packages" className="mt-8 lg:mt-0">
+      <h2 className="text-2xl font-semibold text-slate-900">Compare Packages</h2>
 
       <div className="mt-4 md:mt-6 overflow-hidden rounded-lg md:rounded-[24px] border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
